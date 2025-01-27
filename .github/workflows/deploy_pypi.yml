@@ -27,8 +27,22 @@ jobs:
       - name: Build a binary wheel and a source tarball
         run: |
           python -m build
-      - name: Publish package to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
         with:
-          user: __token__ 
-          password: ${{secrets.PYPI_PASSWORD}}
+          name: python-package-distributions
+          path: dist/
+
+  publish-to-pypi:
+    name: >-
+      Publish Python 🐍 distribution 📦 to PyPI
+    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
+    needs:
+    - build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/zencfg
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+  
