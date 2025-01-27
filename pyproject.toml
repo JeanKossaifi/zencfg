@@ -1,3 +1,33 @@
+[project]
+name = "zencfg"
+description = "The Zen way to configure your Python projects, deep learning and others"
+authors = [
+    {name = "Jean Kossaifi"},
+]
+dependencies = [
+    "pydantic"
+]
+requires-python = ">=3.9"
+readme = "README.md"
+
+dynamic = ["version"]
+license = {text = "MIT"}
+
+# Required config for build system
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "zencfg.__version__"}
+
+[project.optional-dependencies]
+doc = [
+    "pytest",
+    "pytest-mock", 
+]
+all = [
+    "pytest",
+    "pytest-mock", 
+    "pydantic"
+]
