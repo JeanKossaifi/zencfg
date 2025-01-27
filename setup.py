@@ -52,7 +52,7 @@ config = {
     'name': 'zencfg',
     'packages': find_packages(where='src'),
     'package_dir': {"": "src"},
-    'description': 'Fast and easy configuration of Python projects.',
+    'description': 'The Zen way to configure your Python projects, deep learning and others.',
     'long_description': README,
     'long_description_content_type' : 'text/markdown',
     'author': 'Jean Kossaifi',
@@ -60,7 +60,7 @@ config = {
     'version': VERSION,
     'url': 'https://github.com/JeanKossaifi/zencfg',
     'download_url': 'https://github.com/JeanKossaifi/zencfg/tarball/' + VERSION,
-    'install_requires': ['pytest', 'pytest-mock'],
+    'install_requires': ['pytest', 'pytest-mock', 'pydantic'],
     'license': 'Modified BSD',
     'scripts': [],
     'classifiers': [

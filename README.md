@@ -16,6 +16,9 @@ In practice, this means that you can define your configuration as Python classes
 You can specify the type of the parameters, and we use Pydantic to verify them.
 You can trivially override any of the parameters through the command-line, with an intuitive interface.
 
+It was built originally to configure and manage scripts for Deep Learning experiments, but you can use it for any Python project.
+The examples I use are Deep Learning inspired.
+
 ## Install
 
 Just clone the repository and install it, here in editable mode:
@@ -35,13 +38,13 @@ There are two main type of configurations: core configuration categories, and su
 Core categories are defined by inheriting **directly** from ConfigBase:
 
 ```python
-    # We define a Model core config
-    class ModelConfig(ConfigBase):
-        version: str = "0.1.0"
+# We define a Model core config
+class ModelConfig(ConfigBase):
+    version: str = "0.1.0"
 
-    # Another base class: optimizer configurations
-    class OptimizerConfig(ConfigBase):
-        lr: float = 0.001
+# Another base class: optimizer configurations
+class OptimizerConfig(ConfigBase):
+    lr: float = 0.001
 ```
 
 ### SubCategories
@@ -51,19 +54,19 @@ For instance, the different type of models you have, optimizers, etc.
 
 To do this, simply inherit from your core category:
 ```python
-    class DiT(ModelConfig):
-        layers: Union[int, List[int]] = 16
+class DiT(ModelConfig):
+    layers: Union[int, List[int]] = 16
 
-    class Unet(ModelConfig):
-        conv: str = "DISCO"
+class Unet(ModelConfig):
+    conv: str = "DISCO"
 
-    # Nested config.
-    class CompositeModel(ModelConfig):
-        submodel: ModelConfig
-        num_heads: int = 4
+# Nested config.
+class CompositeModel(ModelConfig):
+    submodel: ModelConfig
+    num_heads: int = 4
 
-    class AdamW(OptimizerConfig):
-        weight_decay: float = 0.01
+class AdamW(OptimizerConfig):
+    weight_decay: float = 0.01
 ```
 
 ### Composing categories
@@ -71,10 +74,10 @@ You can have configuration objects as parameters in your config:
 for instance, our main configuration will contain a model and an optimizer.
 
 ```python
-    # Our main config is also a core category, and encapsulates a model and an optimizer
-    class Config(ConfigBase):
-        model: ModelConfig
-        opt: OptimizerConfig = OptimizerConfig(_name='adamw')
+# Our main config is also a core category, and encapsulates a model and an optimizer
+class Config(ConfigBase):
+    model: ModelConfig
+    opt: OptimizerConfig = OptimizerConfig(_name='adamw')
 ```
 
 Note the `_name="adamw"`: this indicates that the default will be the AdamW class. 
@@ -84,9 +87,9 @@ through `_name`.
 The above is equivalent to explicitly creating an ADAMW optimizer:
 
 ```python
-    class Config(ConfigBase):
-        model: ModelConfig
-        opt: OptimizerConfig = AdamW(_name='adamw')
+class Config(ConfigBase):
+    model: ModelConfig
+    opt: OptimizerConfig = AdamW(_name='adamw')
 ```
 
 
@@ -95,7 +98,7 @@ The above is equivalent to explicitly creating an ADAMW optimizer:
 Your configurations are Python object: you can instantiate them:
 
 ```python
-    config = Config(model = ModelConfig(name='DIT', layers=24))
+config = Config(model = ModelConfig(name='DIT', layers=24))
 ```
 
 ## Instantiating a configuration with optional values from the command line
