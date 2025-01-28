@@ -98,7 +98,7 @@ class Config(ConfigBase):
 Your configurations are Python object: you can instantiate them:
 
 ```python
-config = Config(model = ModelConfig(name='DIT', layers=24))
+config = Config(model = ModelConfig(_name='DIT', layers=24))
 ```
 
 ## Instantiating a configuration with optional values from the command line
@@ -120,11 +120,17 @@ In that case, we simply use `.` to indicate nesting.
 
 For instance, to instantiate the same config as above, you could simply do:
 ```bash
+python main.py --model DIT --model.layers 24
+```
+
+Or, equivalently, but more verbose (but perhaps also more explicitly):
+```bash
 python main.py --model._name DIT --model.layers 24
 ```
 
-## Configuration to dictionary
-You can directly get a Python dictionary from a configuration instance, simply use `to_dict`:
+## Export your configuration to dictionary
+
+While you can directly use the configuration, you can also get a Python dictionary from a configuration instance, by simply using the `to_dict` method:
 
 ```python
 config_dict = config.to_dict()
@@ -134,6 +140,12 @@ model_cfg = config_dict['model']
 # You can access values as attributes too
 optimizer_cfg = config_dict.opt
 ```
+
+## Examples
+
+For concrete examples, check the [`examples`](examples/) folder.
+You can try running [`test_config`](examples/test_config.py) script.
+
 
 ## Questions or issues
 This is very much a project in development that I wrote for myself and decided to share so others could easily reuse it for multiple projects, while knowing it is tested and actively developed!
