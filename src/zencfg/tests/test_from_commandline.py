@@ -6,10 +6,10 @@ from ..from_commandline import cfg_from_commandline
 def test_config_from_commandline(monkeypatch):
     """"Test for initializing configs from the command line"""
     monkeypatch.setattr("sys.argv", ['test', 
-                                     '--model._name', 'CompositeModel',
-                                     '--model.submodel._name', 'dit',
+                                     '--model._config_name', 'CompositeModel',
+                                     '--model.submodel._config_name', 'dit',
                                      '--model.submodel.layers', 16,
-                                     '--opt._name', 'adamw'])
+                                     '--opt._config_name', 'adamw'])
 
     class ModelConfig(ConfigBase):
         version: str = "0.1.0"
@@ -38,7 +38,7 @@ def test_config_from_commandline(monkeypatch):
         opt: OptimizerConfig = AdamW()
 
     config = cfg_from_commandline(Config)
-    assert config.model._name == "CompositeModel"
-    assert config.model.submodel._name == "dit"
+    assert config.model._config_name == "CompositeModel"
+    assert config.model.submodel._config_name == "dit"
     assert config.model.submodel.layers == 16
-    assert config.opt._name == "adamw"
+    assert config.opt._config_name == "adamw"

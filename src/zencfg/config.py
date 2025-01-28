@@ -26,8 +26,8 @@ class ConfigBase:
         
     **Class creation**
     We manually enable inheritance of class-level attributes by, see notes for detail.
-    You can specify which class you actually want to create by passing a '_name' key in kwargs.
-    The subclass with that _name will be instantiated instead of the BaseConfig.
+    You can specify which class you actually want to create by passing a "_config_config_name" key in kwargs.
+    The subclass with that _config_name will be instantiated instead of the BaseConfig.
     
     **Class hierarchy**
     Each direct descendent from ConfigBase will have a _registry attribute and track their children.
@@ -56,7 +56,7 @@ class ConfigBase:
         * Then override with any passed-in kwargs, including name.
     """
     _registry = {} # Dict[str, Type["ConfigBase"]] = {}
-    _name: str = "configbase"
+    _config_name: str = "configbase"
 
     def __init__(self, **kwargs):
         # Gather default values for optional class attributes
@@ -87,30 +87,30 @@ class ConfigBase:
         super().__init_subclass__(**kwargs)
         parent = cls.__bases__[0]
         cls_name = cls.__name__.lower()
-        cls._name = cls_name
+        cls._config_name = cls_name
         if parent is ConfigBase:
             cls._registry = {}
         elif issubclass(parent, ConfigBase):
             parent._registry[cls_name] = cls
 
     @classmethod
-    def _get_subclass_by_name(cls, name: str) -> Type["ConfigBase"]:
+    def _get_subclass_by_name(cls, config_name: str) -> Type["ConfigBase"]:
         """Return a registered subclass based on `name` if available, else return `cls` itself."""
-        if not name:
+        if not config_name:
             return cls
-        name = name.lower()
-        if name in cls._registry:
-            return cls._registry[name]
+        config_name = config_name.lower()
+        if config_name in cls._registry:
+            return cls._registry[config_name]
         else:
-            raise ValueError(f"Unknown subclass '{name=}' for class '{cls.__name__}'"
+            raise ValueError(f"Unknown subclass '{config_name=}' for class '{cls.__name__}'"
                              f" should be one: {list(cls._registry.keys())})")
     
     def __new__(cls, **kwargs):
-        """Intercept creation. If '_name' is in kwargs, pick the correct subclass."""
-        _name = kwargs.get('_name', None)
-        if _name:    
+        """Intercept creation. If "_config_name" is in kwargs, pick the correct subclass."""
+        config_name = kwargs.get("_config_name", None)
+        if config_name:    
             # Is there a known subclass with that name?
-            subcls = cls._get_subclass_by_name(_name)
+            subcls = cls._get_subclass_by_name(config_name)
             if subcls is not cls:
                 # we found a different subclass, so create that instead
                 return super(ConfigBase, subcls).__new__(subcls)

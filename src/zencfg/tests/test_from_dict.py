@@ -42,21 +42,21 @@ def test_simple_config_from_dict(config_class):
     Basic test showing how to build a config from dotted keys, using local classes.
     """
     data = {
-        "model._name": "dit",
+        "model._config_name": "dit",
         "model.layers": "8",  # string, should parse to int
-        "opt._name": "adamw",
+        "opt._config_name": "adamw",
         "opt.lr": "0.005", # should parse to float
         "opt.weight_decay": "0.1",
     }
     cfg = cfg_from_flat_dict(config_class, data, strict=True)
 
     # 'cfg.model' should be an instance of the DiT subclass
-    assert cfg.model._name.lower() == "dit"
+    assert cfg.model._config_name.lower() == "dit"
     assert cfg.model.version == "0.1.0"
     assert cfg.model.layers == 8
 
     # 'cfg.opt' should be AdamW
-    assert cfg.opt._name == "adamw"
+    assert cfg.opt._config_name == "adamw"
     assert cfg.opt.lr == 0.005
     assert cfg.opt.weight_decay == 0.1
 
@@ -66,16 +66,16 @@ def test_composite_style_from_dict(config_class):
     Another scenario: create a nested model (like a 'composite model' example).
     """
     data = {
-        "model._name": "compositemodel",
-        "model.submodel._name": "Unet",
+        "model._config_name": "compositemodel",
+        "model.submodel._config_name": "Unet",
         "model.submodel.conv": "Success",
-        "opt._name": "adamw",
+        "opt._config_name": "adamw",
     }
     cfg = cfg_from_flat_dict(config_class, data)
 
-    assert cfg.model.submodel._name.lower() == "unet"
+    assert cfg.model.submodel._config_name.lower() == "unet"
     assert cfg.model.submodel.conv == "Success"
-    assert cfg.opt._name == "adamw"
+    assert cfg.opt._config_name == "adamw"
     assert isinstance(cfg.model, CompositeModel)
     assert isinstance(cfg.model.submodel, Unet)
 
@@ -113,14 +113,14 @@ def test_flat_dict_to_nested_simple():
     Test that a straightforward dotted dictionary is converted into the correct nested structure.
     """
     data = {
-        "model._name": "unet",
+        "model._config_name": "unet",
         "model.params.num_layers": 24,
         "model.params.dropout": 0.1,
         "optimizer.lr": 0.001,
     }
     expected = {
         "model": {
-            "_name": "unet",
+            "_config_name": "unet",
             "params": {
                 "num_layers": 24,
                 "dropout": 0.1,

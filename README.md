@@ -77,19 +77,19 @@ for instance, our main configuration will contain a model and an optimizer.
 # Our main config is also a core category, and encapsulates a model and an optimizer
 class Config(ConfigBase):
     model: ModelConfig
-    opt: OptimizerConfig = OptimizerConfig(_name='adamw')
+    opt: OptimizerConfig = OptimizerConfig(_config_name='adamw')
 ```
 
 Note the `_name="adamw"`: this indicates that the default will be the AdamW class. 
 You can create a subcategory by passing to the main category class the class name of the subcategory you want to create, 
-through `_name`. 
+through `_config_name`. 
 
 The above is equivalent to explicitly creating an ADAMW optimizer:
 
 ```python
 class Config(ConfigBase):
     model: ModelConfig
-    opt: OptimizerConfig = AdamW(_name='adamw')
+    opt: OptimizerConfig = AdamW(_config_name='adamw')
 ```
 
 
@@ -98,7 +98,7 @@ class Config(ConfigBase):
 Your configurations are Python object: you can instantiate them:
 
 ```python
-config = Config(model = ModelConfig(_name='DIT', layers=24))
+config = Config(model = ModelConfig(_config_name='DIT', layers=24))
 ```
 
 ## Instantiating a configuration with optional values from the command line
@@ -125,7 +125,7 @@ python main.py --model DIT --model.layers 24
 
 Or, equivalently, but more verbose (but perhaps also more explicitly):
 ```bash
-python main.py --model._name DIT --model.layers 24
+python main.py --model._config_name DIT --model.layers 24
 ```
 
 ## Export your configuration to dictionary

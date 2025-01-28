@@ -87,7 +87,7 @@ def update_nested_dict_from_flat(nested_dict, key, value, separator='.'):
         if k in nested_dict and not isinstance(nested_dict[k], dict):
             current_val = nested_dict[k]
             nested_dict[k] = {}  # Start fresh dict for nested values
-            nested_dict[k]["_name"] = current_val  # Store original value as _name
+            nested_dict[k]["_config_name"] = current_val  # Store original value as _name
         # Create dict if doesn't exist
         elif k not in nested_dict:
             nested_dict[k] = {}
@@ -117,7 +117,7 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
 
     # 1) Determine actual class to use
     if issubclass(config_cls, ConfigBase):
-        name_val = nested_dict.get("_name", None)
+        name_val = nested_dict.get("_config_name", None)
         actual_cls = config_cls._get_subclass_by_name(name_val)
     else:
         actual_cls = config_cls
@@ -132,7 +132,7 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
                 defaults[attr_name] = val
 
     # 3) Validate unknown keys
-    recognized_keys = set(type_hints.keys()) | {"_name"}
+    recognized_keys = set(type_hints.keys()) | {"_config_name"}
     for key in nested_dict:
         if key not in recognized_keys:
             full_path = join_path(path, key)
@@ -152,7 +152,7 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
                 cb_type = extract_configbase_member(field_type)
                 # Handle string values for ConfigBase fields
                 if isinstance(raw_val, str):
-                    raw_val = {"_name": raw_val}
+                    raw_val = {"_config_name": raw_val}
                 if not isinstance(raw_val, dict):
                     raise TypeError(
                         f"Value for ConfigBase field '{full_path}' must be a string or dict, got {type(raw_val)}"
