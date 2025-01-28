@@ -120,12 +120,13 @@ class ConfigBase:
     def __repr__(self) -> str:
         """Custom repr showing meaningful attributes."""
         cls_name = self.__class__.__name__
+        
         attrs = {
             name: value for name, value in vars(self).items()
             if not name.startswith('__') and not callable(value) and value is not None
         }
-        if not attrs:
-            return f"{cls_name}()"
+        # Add _name which doesn't show up in vars() since class attribute
+        attrs['_name'] = cls_name
 
         attrs_str = ', \n'.join(f"{name}={value!r}" for name, value in attrs.items())
         return f"{cls_name}({attrs_str})"
@@ -135,6 +136,10 @@ class ConfigBase:
         Returns a dictionary representation of this config (either nested or flattened).
         """
         result = {}
+    
+        # Add _name from class if it exists, not in vars() since class attribute
+        result['_name'] = self.__class__._name
+
         for attr_name, value in vars(self).items():
             if attr_name.startswith('__') or callable(value):
                 continue

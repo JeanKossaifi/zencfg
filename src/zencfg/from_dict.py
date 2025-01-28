@@ -82,14 +82,20 @@ def update_nested_dict_from_flat(nested_dict, key, value, separator='.'):
     if len(keys) == 1:
         nested_dict[keys[0]] = value
     else:
-        k, rest = keys
-        if k not in nested_dict:
-            nested_dict[k] = dict()
-        elif not isinstance(nested_dict[k], dict):
-            msg = (f"Collision: trying to set {key=} to {value=},"
-                   f" but nested_dict[{k}] already has value={nested_dict[k]}.")
-            raise ValueError(msg)
-        update_nested_dict_from_flat(nested_dict[k], rest, value, separator=separator)
+            k, rest = keys
+            # Convert string value to dict with _name if needed
+            if k in nested_dict and isinstance(nested_dict[k], str):
+                nested_dict[k] = {"_name": nested_dict[k]}
+            
+            # Create empty dict if key doesn't exist
+            if k not in nested_dict:
+                nested_dict[k] = dict()
+            elif not isinstance(nested_dict[k], dict):
+                msg = (f"Collision: trying to set {key=} to {value=},"
+                    f" but nested_dict[{k}] already has value={nested_dict[k]}.")
+                raise ValueError(msg)
+                
+            update_nested_dict_from_flat(nested_dict[k], rest, value, separator=separator)
 
 def flat_dict_to_nested(flat_dict: Dict[str, Any]) -> Dict[str, Any]:
     nested_dict = {}
@@ -111,6 +117,11 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
     """
     logger.debug("Building config for '%s' at path='%s' with data=%r",
                  config_cls.__name__, path, nested_dict)
+
+    # Handle the case where nested_dict is actually a string (direct subclass name)
+    if isinstance(nested_dict, str):
+        nested_dict = {"_name": nested_dict}
+
 
     # 1) Possibly switch to subclass if 'name' is given
     if issubclass(config_cls, ConfigBase):
@@ -146,15 +157,16 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
         if field_name in nested_dict:
             # same as before: parse or recurse
             raw_val = nested_dict[field_name]
+
             if is_configbase_type(field_type):
                 cb_type = extract_configbase_member(field_type)
-                if not isinstance(raw_val, dict):
-                    raise TypeError(...)
-                nested_val = cfg_from_nested_dict(cb_type, raw_val, strict, path=full_path)
-                init_values[field_name] = nested_val
-            else:
-                parsed_val = parse_value_to_type(raw_val, field_type, strict, path=full_path)
-                init_values[field_name] = parsed_val
+                # Handle both string values and dicts for ConfigBase fields
+                if isinstance(raw_val, str):
+                    init_values[field_name] = cfg_from_nested_dict(cb_type, {"_name": raw_val}, strict, path=full_path)
+                elif isinstance(raw_val, dict):
+                    init_values[field_name] = cfg_from_nested_dict(cb_type, raw_val, strict, path=full_path)
+                else:
+                    raise TypeError(f"Invalid value type for ConfigBase field {full_path}: {type(raw_val)}")
 
         else:
             # Field not in nested_dict
@@ -176,6 +188,11 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
             else:
                 # If the class does have a default, use it
                 init_values[field_name] = default_val
+
+    # Then add any remaining values from nested_dict that weren't processed
+    for field_name, raw_val in nested_dict.items():
+        if field_name not in init_values and field_name != '_name':
+            init_values[field_name] = raw_val
 
     # 5) Instantiate
     instance = actual_cls.__new__(actual_cls)
