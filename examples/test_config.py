@@ -21,9 +21,6 @@ class DiT(ModelConfig):
 class Unet(ModelConfig):
     conv: str = "DISCO"
 
-class Config(ConfigBase):
-    model: ModelConfig
-
 # Nested config.
 class CompositeModel(ModelConfig):
     submodel: ModelConfig
