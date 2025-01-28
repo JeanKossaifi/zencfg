@@ -150,9 +150,12 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
             raw_val = nested_dict[field_name]
             if is_configbase_type(field_type):
                 cb_type = extract_configbase_member(field_type)
+                # Handle string values for ConfigBase fields
+                if isinstance(raw_val, str):
+                    raw_val = {"_name": raw_val}
                 if not isinstance(raw_val, dict):
                     raise TypeError(
-                        f"Value for ConfigBase field '{full_path}' must be a dict, got {type(raw_val)}"
+                        f"Value for ConfigBase field '{full_path}' must be a string or dict, got {type(raw_val)}"
                     )
                 nested_val = cfg_from_nested_dict(cb_type, raw_val, strict, path=full_path)
                 init_values[field_name] = nested_val
