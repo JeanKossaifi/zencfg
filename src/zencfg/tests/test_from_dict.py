@@ -37,7 +37,7 @@ def config_class():
     return Config
 
 
-def test_simple_config(config_class):
+def test_simple_config_from_dict(config_class):
     """
     Basic test showing how to build a config from dotted keys, using local classes.
     """
@@ -61,7 +61,7 @@ def test_simple_config(config_class):
     assert cfg.opt.weight_decay == 0.1
 
 
-def test_composite_style(config_class):
+def test_composite_style_from_dict(config_class):
     """
     Another scenario: create a nested model (like a 'composite model' example).
     """
@@ -78,6 +78,34 @@ def test_composite_style(config_class):
     assert cfg.opt._name == "adamw"
     assert isinstance(cfg.model, CompositeModel)
     assert isinstance(cfg.model.submodel, Unet)
+
+
+def test_invalid_keys_from_dict(config_class):
+    """
+    Test that if a key conflicts with a non-dict in the path, we raise ValueError.
+    """
+    data = {
+        "model.params": "DOesn't exist",
+        "model.version": '0.1.2',
+    }
+    with pytest.raises(ValueError):
+        cfg_from_flat_dict(config_class, data)
+
+    # Just a wrong name
+    data = {
+        "model": "NOT A MODEL",
+        "model.version": '0.1.2',
+    }
+    with pytest.raises(ValueError):
+        cfg_from_flat_dict(config_class, data)
+
+    # Right name, wrong parameter
+    data = {
+        "model": "DIT",
+        "model.unexistant_param": 'DOES NOT EXIST',
+    }
+    with pytest.raises(ValueError):
+        cfg_from_flat_dict(config_class, data)
 
 
 def test_flat_dict_to_nested_simple():
@@ -106,16 +134,3 @@ def test_flat_dict_to_nested_simple():
     assert result == expected, f"Expected {expected} but got {result}"
 
 
-def test_flat_dict_to_nested_invalid():
-    """
-    Test that if a key conflicts with a non-dict in the path, we raise ValueError.
-    """
-    # Here, "model.params" is set to a string (not a dict),
-    # but we also try to set "model.params.dropout".
-    # This should trigger an error..."
-    data = {
-        "model.params": "not a dict",
-        "model.params.dropout": 0.1,
-    }
-    with pytest.raises(ValueError):
-        flat_dict_to_nested(data)

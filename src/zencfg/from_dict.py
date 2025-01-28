@@ -69,7 +69,7 @@ def parse_value_to_type(raw_val: Any, expected_type: Any, strict: bool, path: st
 def update_nested_dict_from_flat(nested_dict, key, value, separator='.'):
     """Updates inplace a nested dict using a flattened key with nesting represented by a separator,
     for a single nested key (e.g. param1.subparam2.subsubparam3) and corresponding value.
-    
+
     Parameters
     ----------
     nested_dict : dict
@@ -83,20 +83,23 @@ def update_nested_dict_from_flat(nested_dict, key, value, separator='.'):
         nested_dict[keys[0]] = value
     else:
         k, rest = keys
-        if k not in nested_dict:
-            nested_dict[k] = dict()
-        elif not isinstance(nested_dict[k], dict):
-            msg = (f"Collision: trying to set {key=} to {value=},"
-                   f" but nested_dict[{k}] already has value={nested_dict[k]}.")
-            raise ValueError(msg)
+        # If k exists but is not a dict, convert current value to a dict 
+        if k in nested_dict and not isinstance(nested_dict[k], dict):
+            current_val = nested_dict[k]
+            nested_dict[k] = {}  # Start fresh dict for nested values
+            nested_dict[k]["_name"] = current_val  # Store original value as _name
+        # Create dict if doesn't exist
+        elif k not in nested_dict:
+            nested_dict[k] = {}
         update_nested_dict_from_flat(nested_dict[k], rest, value, separator=separator)
 
 def flat_dict_to_nested(flat_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert a flat dictionary with dot notation to a nested dictionary."""
+    sorted_items = sorted(flat_dict.items(), key=lambda x: len(x[0].split('.')))
     nested_dict = {}
-    for key, value in flat_dict.items():
+    for key, value in sorted_items:
         update_nested_dict_from_flat(nested_dict, key, value)
     return nested_dict
-
 
 def join_path(base: str, field_name: str) -> str:
     return field_name if not base else f"{base}.{field_name}"
@@ -112,7 +115,7 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
     logger.debug("Building config for '%s' at path='%s' with data=%r",
                  config_cls.__name__, path, nested_dict)
 
-    # 1) Possibly switch to subclass if 'name' is given
+    # 1) Determine actual class to use
     if issubclass(config_cls, ConfigBase):
         name_val = nested_dict.get("_name", None)
         actual_cls = config_cls._get_subclass_by_name(name_val)
@@ -144,37 +147,33 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
         full_path = join_path(path, field_name)
 
         if field_name in nested_dict:
-            # same as before: parse or recurse
             raw_val = nested_dict[field_name]
             if is_configbase_type(field_type):
                 cb_type = extract_configbase_member(field_type)
                 if not isinstance(raw_val, dict):
-                    raise TypeError(...)
+                    raise TypeError(
+                        f"Value for ConfigBase field '{full_path}' must be a dict, got {type(raw_val)}"
+                    )
                 nested_val = cfg_from_nested_dict(cb_type, raw_val, strict, path=full_path)
                 init_values[field_name] = nested_val
             else:
                 parsed_val = parse_value_to_type(raw_val, field_type, strict, path=full_path)
                 init_values[field_name] = parsed_val
-
         else:
             # Field not in nested_dict
             default_val = defaults.get(field_name, MISSING)
             if default_val is MISSING:
-                # Means the class does NOT have a default at all
                 if strict:
-                    # In strict mode, missing field => error
                     raise ValueError(
                         f"Missing required field '{field_name}' in {actual_cls.__name__} (strict mode)."
                     )
                 else:
-                    # non-strict => auto-instantiate if it's a ConfigBase
                     if is_configbase_type(field_type):
                         cb_type = extract_configbase_member(field_type)
                         init_values[field_name] = cb_type()  # use default ctor
                     else:
                         init_values[field_name] = None
             else:
-                # If the class does have a default, use it
                 init_values[field_name] = default_val
 
     # 5) Instantiate
