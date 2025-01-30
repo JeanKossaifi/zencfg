@@ -146,6 +146,47 @@ optimizer_cfg = config_dict.opt
 For concrete examples, check the [`examples`](examples/) folder.
 You can try running [`test_config`](examples/test_config.py) script.
 
+## Gotchas
+
+Note that we handle ConfigBase types differently. Consider the following scenario:
+```python
+class ModelConfig(BaseConfig):
+    in_channels: int = 3
+    out_channels: int = 1
+
+class UNet(ModelConfig):
+    layers: int = 10
+    kernel: Tuple[int] = (3, 3)
+
+class DiT(ModelConfig):
+    layers: int = 10
+    n_heads: int = 12
+
+class Config(BaseConfig):
+    some_param: str = 'whatever'
+    model: ModelConfig = DiT(layers=4)
+```
+
+Now, if a user wants to override the number of layers through the command line to 6, they'd want to write:
+```bash
+python script.py --model.layers 6
+```
+
+We allow this and it will give you a DiT model with 6 layers. 
+
+This is where the gotcha comes from: if you just instantiate the default type with layers=6, 
+you would be instantiating a `BaseModel`, **not** a DiT (which would also cause an error since BaseModel does not have layers).
+
+To fix this, we treat BaseConfig parameters differently: we first take the default value (here, DiT(layers=6)). 
+Then, if the user passes a new `_config_name` (e.g. 'unet'), we discard those and use only users defaults.
+
+Otherwise, if the user does **not** pass a `_config_name` (i.e. they want to use the default), then we use 
+the same defaults (`DiT(layers=6)`), which is turned into a dict: `{'_config_name': 'dit', 'layers': 4}` and we update it 
+with the values passed by the user. 
+
+This causes the least surprises in general but you may want to be aware of this.
+For example, back to our example, this will allow the users to get back a config that matches what they'd expect: 
+ `{'_config_name': 'dit', 'layers': 6}`
 
 ## Questions or issues
 This is very much a project in development that I wrote for myself and decided to share so others could easily reuse it for multiple projects, while knowing it is tested and actively developed!
