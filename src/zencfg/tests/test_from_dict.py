@@ -159,16 +159,19 @@ def test_preserve_config_defaults_args(config_class):
 
     class AdamW(OptimizerConfig):
         weight_decay: float = 0.01
+        param: int = 2
 
     class Config(ConfigBase):
         model: ModelConfig
-        opt: OptimizerConfig = OptimizerConfig(_config_name="adamw")
+        opt: OptimizerConfig = OptimizerConfig(_config_name="adamw", weight_decay=10)
         scheduler: SchedulerConfig = SchedulerConfig()
 
     data = {
-        "opt.weight_decay": "10",
+        "opt.param": "10",
     }
     result = cfg_from_flat_dict(Config, data)
     assert result.opt._config_name == 'adamw', f"Expected 'adamw' but got {result}"
+    assert result.opt.weight_decay == 0.01
+    assert result.opt.param == 10
 
 

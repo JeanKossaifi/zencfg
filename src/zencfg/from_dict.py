@@ -109,20 +109,51 @@ def join_path(base: str, field_name: str) -> str:
 # -------------------------------------------
 def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: bool,
                       path: str = "") -> Any:
+    """Build a config instance from a nested dictionary with inheritance support.
+    
+    Creates an instance of config_cls (or its appropriate subclass) using values from 
+    nested_dict. Handles nested ConfigBase fields recursively. 
+    
+    For ConfigBase fields, values are resolved with the following precedence:
+    1. Class defaults (from parent and child classes)
+    2. _config_name (preserved from default instance if not overridden)
+    3. User-provided values
+    
+    Parameters
+    ----------
+    config_cls : type
+        The config class to instantiate (must be a ConfigBase subclass for inheritance)
+    nested_dict : dict
+        Nested dictionary of values. For ConfigBase fields, can contain either:
+        - str: treated as _config_name to select subclass (e.g. {config_cls: CLASS_NAME_STR})
+        - dict: values to override in the instance (e.g. {config_cls: {param1: value1, param2: value2}})
+    strict : bool
+        If True, raises on type conversion errors and missing required fields.
+        If False, keeps original values and sets missing fields to None.
+    path : str, optional
+        Current path in the config hierarchy, used for error messages.
+        
+    Returns
+    -------
+    Instance of config_cls (or selected subclass) with applied values
+        
+    Raises
+    ------
+    TypeError
+        If invalid value type provided for a ConfigBase field
+    ValueError
+        If unknown config keys or missing required fields (in strict mode)
     """
-    Recursively build an instance of 'config_cls' from a nested dictionary.
-    """
-    logger.debug("Building config for '%s' at path='%s' with data=%r",
-                 config_cls.__name__, path, nested_dict)
+    logger.debug(f"Building config for '{config_cls.__name__}' at path='{path}' with data={nested_dict}")
 
-    # 1) Determine actual class to use
+    # 1) Determine actual class to use based on _config_name
     if issubclass(config_cls, ConfigBase):
         name_val = nested_dict.get("_config_name", None)
         actual_cls = config_cls._get_subclass_by_name(name_val)
     else:
         actual_cls = config_cls
 
-    # 2) Gather type hints & defaults
+    # 2) Gather type hints & defaults from the actual class
     type_hints = get_type_hints(actual_cls, include_extras=True)
     defaults = {}
     for attr_name in dir(actual_cls):
@@ -145,40 +176,37 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
     init_values = {}
     for field_name, field_type in type_hints.items():
         full_path = join_path(path, field_name)
+        default_val = defaults.get(field_name, MISSING)
 
         if field_name in nested_dict:
             raw_val = nested_dict[field_name]
-            # We deal with ConfigBase type fields separately
+            # Handle ConfigBase type fields
             if is_configbase_type(field_type):
                 cb_type = extract_configbase_member(field_type)
-                # NEW: Get the default value if it exists
-                default_val = defaults.get(field_name, None)
-                if isinstance(default_val, cb_type):
-                    # If we have a default ConfigBase instance, get its _config_name
-                    config_name = getattr(default_val, '_config_name', None)
-                    if config_name:
-                        # If raw_val is a dict, merge with default _config_name
-                        if isinstance(raw_val, dict):
-                            raw_val = {"_config_name": config_name, **raw_val}
-                        # If raw_val is a string, it's a new _config_name: override the default
-                        elif isinstance(raw_val, str):
-                            raw_val = {"_config_name": raw_val}
+                # Start with class defaults
+                merged_dict = {}
+                
+                # If raw_val is a string, it's just the _config_name
+                if isinstance(raw_val, str):
+                    merged_dict["_config_name"] = raw_val
+                elif isinstance(raw_val, dict):
+                    merged_dict.update(raw_val)
                 else:
-                    # Handle string values for ConfigBase fields without defaults
-                    if isinstance(raw_val, str):
-                        raw_val = {"_config_name": raw_val}
-                if not isinstance(raw_val, dict):
                     raise TypeError(
                         f"Value for ConfigBase field '{full_path}' must be a string or dict, got {type(raw_val)}"
                     )
-                nested_val = cfg_from_nested_dict(cb_type, raw_val, strict, path=full_path)
+
+                # Get _config_name from default if not overridden
+                if isinstance(default_val, cb_type) and "_config_name" not in merged_dict:
+                    merged_dict["_config_name"] = getattr(default_val, "_config_name", None)
+
+                nested_val = cfg_from_nested_dict(cb_type, merged_dict, strict, path=full_path)
                 init_values[field_name] = nested_val
             else:
                 parsed_val = parse_value_to_type(raw_val, field_type, strict, path=full_path)
                 init_values[field_name] = parsed_val
         else:
-            # Field not in nested_dict
-            default_val = defaults.get(field_name, MISSING)
+            # Field not in nested_dict - use default or create new
             if default_val is MISSING:
                 if strict:
                     raise ValueError(
@@ -187,7 +215,7 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
                 else:
                     if is_configbase_type(field_type):
                         cb_type = extract_configbase_member(field_type)
-                        init_values[field_name] = cb_type()  # use default ctor
+                        init_values[field_name] = cb_type()
                     else:
                         init_values[field_name] = None
             else:
