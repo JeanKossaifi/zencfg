@@ -175,3 +175,25 @@ def test_preserve_config_defaults_args(config_class):
     assert result.opt.param == 10
 
 
+
+
+def test_no_subclass():
+    class OptimizerConfig(ConfigBase):
+        lr: float = 0.001
+
+    class AdamW(OptimizerConfig):
+        weight_decay: float = 0.01
+        param: int = 2
+
+    class Config(ConfigBase):
+        model: ModelConfig
+        opt: OptimizerConfig = OptimizerConfig()
+
+    data = {
+        "opt.lr": "10",
+    }
+    result = cfg_from_flat_dict(Config, data)
+    assert result.opt._config_name == 'optimizerconfig'
+    assert result.opt.lr == 10
+
+

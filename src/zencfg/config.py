@@ -99,6 +99,8 @@ class ConfigBase:
         if not config_name:
             return cls
         config_name = config_name.lower()
+        if config_name == cls._config_name:
+            return cls
         if config_name in cls._registry:
             return cls._registry[config_name]
         else:
