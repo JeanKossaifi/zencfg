@@ -148,11 +148,25 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
 
         if field_name in nested_dict:
             raw_val = nested_dict[field_name]
+            # We deal with ConfigBase type fields separately
             if is_configbase_type(field_type):
                 cb_type = extract_configbase_member(field_type)
-                # Handle string values for ConfigBase fields
-                if isinstance(raw_val, str):
-                    raw_val = {"_config_name": raw_val}
+                # NEW: Get the default value if it exists
+                default_val = defaults.get(field_name, None)
+                if isinstance(default_val, cb_type):
+                    # If we have a default ConfigBase instance, get its _config_name
+                    config_name = getattr(default_val, '_config_name', None)
+                    if config_name:
+                        # If raw_val is a dict, merge with default _config_name
+                        if isinstance(raw_val, dict):
+                            raw_val = {"_config_name": config_name, **raw_val}
+                        # If raw_val is a string, it's a new _config_name: override the default
+                        elif isinstance(raw_val, str):
+                            raw_val = {"_config_name": raw_val}
+                else:
+                    # Handle string values for ConfigBase fields without defaults
+                    if isinstance(raw_val, str):
+                        raw_val = {"_config_name": raw_val}
                 if not isinstance(raw_val, dict):
                     raise TypeError(
                         f"Value for ConfigBase field '{full_path}' must be a string or dict, got {type(raw_val)}"

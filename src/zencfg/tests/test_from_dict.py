@@ -24,12 +24,15 @@ class OptimizerConfig(ConfigBase):
 class AdamW(OptimizerConfig):
     weight_decay: float = 0.01
 
+class LAMB(OptimizerConfig):
+    lamb_param: float = 0.01
+
 class SchedulerConfig(ConfigBase):
     patience: float = 100
 
 class Config(ConfigBase):
     model: ModelConfig
-    opt: OptimizerConfig
+    opt: OptimizerConfig = OptimizerConfig(_config_name="adamw")
     scheduler: SchedulerConfig = SchedulerConfig()
 
 @pytest.fixture
@@ -78,7 +81,15 @@ def test_composite_style_from_dict(config_class):
     assert cfg.opt._config_name == "adamw"
     assert isinstance(cfg.model, CompositeModel)
     assert isinstance(cfg.model.submodel, Unet)
-
+    
+    # Check that we didn't ALSO add some other model parameters
+    cfg = cfg.to_dict()
+    for param, value in cfg.model.items():
+        if param == '_config_name':
+            assert (value.lower() != 'dit')
+    for param, value in cfg.model.submodel.items():
+        if param == '_config_name':
+            assert (value.lower() != 'dit')
 
 def test_invalid_keys_from_dict(config_class):
     """
@@ -132,5 +143,32 @@ def test_flat_dict_to_nested_simple():
     }
     result = flat_dict_to_nested(data)
     assert result == expected, f"Expected {expected} but got {result}"
+
+
+def test_preserve_config_defaults_args(config_class):
+    """
+    That's a tricky one: for ConfigBase type, we want to 
+    **add** users' parameters to the existing default parameters. 
+    
+    Otherwise, if user just change parameters, but not _config_name, 
+    they expect to get a class with the same defaults as the original class.
+    But they'd instead get the base class.
+    """
+    class OptimizerConfig(ConfigBase):
+        lr: float = 0.001
+
+    class AdamW(OptimizerConfig):
+        weight_decay: float = 0.01
+
+    class Config(ConfigBase):
+        model: ModelConfig
+        opt: OptimizerConfig = OptimizerConfig(_config_name="adamw")
+        scheduler: SchedulerConfig = SchedulerConfig()
+
+    data = {
+        "opt.weight_decay": "10",
+    }
+    result = cfg_from_flat_dict(Config, data)
+    assert result.opt._config_name == 'adamw', f"Expected 'adamw' but got {result}"
 
 
