@@ -1,7 +1,8 @@
 import warnings
 import logging
+import ast
 from typing import Any, Dict, get_type_hints, Union, get_origin, get_args
-from pydantic import ValidationError, TypeAdapter
+from pydantic import ValidationError, TypeAdapter, ConfigDict
 
 from .config import ConfigBase
 
@@ -11,7 +12,6 @@ logger = logging.getLogger(__name__)
 # Utilities for detecting configbase in union
 # -------------------------------------------
 MISSING = object()  # sentinel
-
 
 def is_configbase_type(tp: Any) -> bool:
     """
@@ -39,21 +39,48 @@ def extract_configbase_member(tp: Any) -> Any:
     return tp
 
 # -------------------------------------------
-# Value parsing with Pydantic v2 TypeAdapter
+# Value parsing with Pydantic and literal_eval
 # -------------------------------------------
+def should_parse_string(value: str, expected_type: Any) -> bool:
+    """
+    Determine if a string value should be parsed with ast.literal_eval based on the expected type.
+    We should NOT parse strings when:
+    1. The expected type is str
+    2. The expected type is a Union that includes str
+    """
+    if expected_type is str:
+        return False
+    origin = get_origin(expected_type)
+    if origin is Union and str in get_args(expected_type):
+        return False
+    return True
+
 def parse_value_to_type(raw_val: Any, expected_type: Any, strict: bool, path: str) -> Any:
     """
-    Use Pydantic's TypeAdapter to parse 'raw_val' against its 'expected_type'.
-    We add 'arbitrary_types_allowed=True' so it doesn't choke on ConfigBase classes.
-
-    Note: path is the full nested key, passed only to print useful error messages.
+    Parse 'raw_val' to 'expected_type' using Pydantic's TypeAdapter.
+    If 'raw_val' is a string and the expected type is not str (or Union containing str),
+    try to parse it as a Python literal first.
     """
-    adapter = TypeAdapter(
-        expected_type,
-        config={"arbitrary_types_allowed": True}  # Key fix for strict mode with custom classes
-    )
+    if is_configbase_type(expected_type):
+        return raw_val
+
+    # Only parse string if needed
+    if isinstance(raw_val, str) and should_parse_string(raw_val, expected_type):
+        try:
+            raw_val = ast.literal_eval(raw_val)
+        except (SyntaxError, ValueError):
+            pass  # Keep as string if not a literal
+
     try:
-        logger.debug(f"Parsing key={path} with type={expected_type}, raw_value={raw_val}")
+        adapter = TypeAdapter(
+            expected_type,
+            config=ConfigDict(
+                arbitrary_types_allowed=True,
+                strict=strict,
+                validate_assignment=True,
+            )
+        )
+        logger.debug(f"Validating {path}: {raw_val} against {expected_type} (strict={strict})")
         return adapter.validate_python(raw_val)
     except ValidationError as e:
         msg = f"Failed to parse key '{path}', with value={raw_val} and {expected_type=}. Full error: {e}"
@@ -203,6 +230,7 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
                 nested_val = cfg_from_nested_dict(cb_type, merged_dict, strict, path=full_path)
                 init_values[field_name] = nested_val
             else:
+                # For non-ConfigBase fields, parse the value according to its type
                 parsed_val = parse_value_to_type(raw_val, field_type, strict, path=full_path)
                 init_values[field_name] = parsed_val
         else:

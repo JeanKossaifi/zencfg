@@ -16,7 +16,8 @@ class ModelConfig(ConfigBase):
 
 # Is a ModelConfig
 class DiT(ModelConfig):
-    layers: Union[int, List[int]] = 16
+    layers: Union[int, List[int]] = [16, 8]
+    version: str = '2.0.0'
 
 class Unet(ModelConfig):
     conv: str = "DISCO"
@@ -38,7 +39,7 @@ class Config(ConfigBase):
     opt: OptimizerConfig = AdamW()
 
 if __name__ == "__main__":
-    c = cfg_from_commandline(Config)
+    c = cfg_from_commandline(Config, strict=True)
     print(c)
     print(c.to_dict())
 
