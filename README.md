@@ -78,7 +78,7 @@ config = ModelConfig(layers="invalid")  # ValidationError immediately!
 # No more failed experiments due to config typos
 ```
 
-### **3. Effortless and Flexible Experimentation**
+### **3. Quick and Flexible Experimentation**
 Override any nested parameter through intuitive command-line syntax without file editing. Switch between model architectures, optimizers, and their specific parameters in a single command.
 
 ```bash
