@@ -60,7 +60,7 @@ def parse_value_to_type(value: Any, field_type: Type, strict: bool = True, path:
         if strict:
             # Add value and type info to Pydantic's error message, with truncation
             raise TypeError(
-                f"Invalid value for field '{path}' (got {type(value).__name__} = {value:.100}):\n{str(e)}"
+                f"Invalid value for field '{path}' (got {type(value).__name__} = {str(value)[:100]}):\n{str(e)}"
             )
         return value
 
