@@ -1,5 +1,6 @@
 from zencfg.from_dict import parse_value_to_type
-from typing import List, Union
+from typing import List, Union, Optional
+import pytest
 
 def test_parse_list_from_string():
     # Test with a list of integers
@@ -13,3 +14,17 @@ def test_parse_list_from_string():
     print(f"Result: {result}, Type: {type(result)}")
     assert isinstance(result, int)
     assert result == 42
+
+def test_parse_optional():
+    # Test with None value
+    result = parse_value_to_type(None, Optional[float], strict=True, path="test")
+    assert result is None
+
+    # Test with valid float
+    result = parse_value_to_type("1.5", Optional[float], strict=True, path="test")
+    assert isinstance(result, float)
+    assert result == 1.5
+
+    # Test with invalid value
+    with pytest.raises(TypeError):
+        parse_value_to_type("not_a_float", Optional[float], strict=True, path="test")

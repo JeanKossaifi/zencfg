@@ -1,6 +1,103 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, Type, Union, List, get_origin, get_args
+from pydantic import TypeAdapter, ValidationError
 
 from .bunch import Bunch
+
+
+def is_configbase_type(tp: Any) -> bool:
+    """
+    Returns True if type 'tp' is a subclass of ConfigBase OR a Union that includes a ConfigBase subclass.
+    """
+    origin = get_origin(tp)
+    def is_configbase(cls):
+        return isinstance(cls, type) and any(base.__name__ == 'ConfigBase' for base in cls.__mro__)
+    if origin is Union:
+        return any(is_configbase(arg) for arg in get_args(tp))
+    else:
+        return is_configbase(tp)
+
+def parse_value_to_type(value: Any, field_type: Type, strict: bool = True, path: str = "") -> Any:
+    """Parse a value to match its expected type.
+    
+    Parameters
+    ----------
+    value : Any
+        The value to parse
+    field_type : Type
+        The expected type
+    strict : bool
+        If True, raises on type conversion errors
+    path : str
+        Path in the config hierarchy, used for error messages
+        
+    Returns
+    -------
+    Any
+        The parsed value
+        
+    Raises
+    ------
+    TypeError
+        If value cannot be converted to the expected type
+    """
+    # Handle ConfigBase types
+    if is_configbase_type(field_type):
+        if isinstance(value, field_type):
+            return value
+        if strict:
+            raise TypeError(f"Value for field '{path}' must be an instance of {getattr(field_type, '__name__', str(field_type))}")
+        return value
+
+    # Handle Union types
+    origin = get_origin(field_type)
+    if origin is Union:
+        args = get_args(field_type)
+        # Check if this is an Optional type (Union[T, None])
+        is_optional = len(args) == 2 and type(None) in args
+        if is_optional and value is None:
+            return None
+
+        for t in args:
+            if t is type(None):  # Skip None in Union
+                continue
+            try:
+                # For string values, try parsing as JSON first
+                if isinstance(value, str):
+                    try:
+                        adapter = TypeAdapter(t)
+                        return adapter.validate_json(value)
+                    except Exception:
+                        pass  # Fall back to normal parsing
+                return parse_value_to_type(value, t, strict, path)
+            except TypeError:
+                continue
+        if strict:
+            raise TypeError(f"Value {value} for field '{path}' does not match any type in Union {field_type}")
+        return value
+
+    # Handle List types
+    if origin is list:
+        if not isinstance(value, (list, tuple)):
+            if strict:
+                raise TypeError(f"Field '{path}' must be a list, got {type(value)}")
+            return value
+        item_type = get_args(field_type)[0]
+        return [parse_value_to_type(item, item_type, strict, f"{path}[{i}]") for i, item in enumerate(value)]
+
+    # Handle basic types with pydantic
+    try:
+        adapter = TypeAdapter(field_type)
+        # If value is a string, try to parse it as JSON first
+        if isinstance(value, str):
+            try:
+                return adapter.validate_json(value)
+            except Exception:
+                pass  # Fall back to validate_python if JSON parsing fails
+        return adapter.validate_python(value)
+    except ValidationError as e:
+        if strict:
+            raise TypeError(f"Invalid value for field '{path}': {str(e)}")
+        return value
 
 
 def gather_defaults(cls) -> dict:
@@ -57,6 +154,13 @@ class ConfigBase:
     """
     _registry = {} # Dict[str, Type["ConfigBase"]] = {}
     _config_name: str = "configbase"
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Override attribute setting to validate types."""
+        if name in self.__annotations__:
+            field_type = self.__annotations__[name]
+            value = parse_value_to_type(value, field_type, strict=True, path=name)
+        super().__setattr__(name, value)
 
     def __init__(self, **kwargs):
         # Gather default values for optional class attributes

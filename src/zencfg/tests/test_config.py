@@ -38,3 +38,32 @@ def test_config():
     c = Config(model = ModelConfig(name='DIT', layers=24))
     assert c.model.name == "DIT"
     assert c.model.layers == 24
+
+def test_type_validation():
+    """Test that type validation works during attribute setting."""
+    class TestConfig(ConfigBase):
+        int_field: int = 1
+        str_field: str = "test"
+        float_field: float = 1.0
+        list_field: List[int] = [1, 2, 3]
+
+    # Test valid values
+    cfg = TestConfig(int_field="2")  # Should convert string to int
+    assert cfg.int_field == 2
+    assert isinstance(cfg.int_field, int)
+
+    cfg = TestConfig(float_field="2.5")  # Should convert string to float
+    assert cfg.float_field == 2.5
+    assert isinstance(cfg.float_field, float)
+
+    cfg = TestConfig(list_field=["1", "2", "3"])  # Should convert strings to ints
+    assert cfg.list_field == [1, 2, 3]
+    assert all(isinstance(x, int) for x in cfg.list_field)
+
+    # Test invalid values
+    with pytest.raises(TypeError):
+        TestConfig(int_field="not_an_int")
+    with pytest.raises(TypeError):
+        TestConfig(float_field="not_a_float")
+    with pytest.raises(TypeError):
+        TestConfig(list_field=["not_an_int"])

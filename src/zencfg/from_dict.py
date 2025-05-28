@@ -4,7 +4,7 @@ import ast
 from typing import Any, Dict, get_type_hints, Union, get_origin, get_args
 from pydantic import ValidationError, TypeAdapter, ConfigDict
 
-from .config import ConfigBase
+from .config import ConfigBase, parse_value_to_type
 
 logger = logging.getLogger(__name__)
 
@@ -38,57 +38,6 @@ def extract_configbase_member(tp: Any) -> Any:
                 return arg
     return tp
 
-# -------------------------------------------
-# Value parsing with Pydantic and literal_eval
-# -------------------------------------------
-def should_parse_string(value: str, expected_type: Any) -> bool:
-    """
-    Determine if a string value should be parsed with ast.literal_eval based on the expected type.
-    We should NOT parse strings when:
-    1. The expected type is str
-    2. The expected type is a Union that includes str
-    """
-    if expected_type is str:
-        return False
-    origin = get_origin(expected_type)
-    if origin is Union and str in get_args(expected_type):
-        return False
-    return True
-
-def parse_value_to_type(raw_val: Any, expected_type: Any, strict: bool, path: str) -> Any:
-    """
-    Parse 'raw_val' to 'expected_type' using Pydantic's TypeAdapter.
-    If 'raw_val' is a string and the expected type is not str (or Union containing str),
-    try to parse it as a Python literal first.
-    """
-    if is_configbase_type(expected_type):
-        return raw_val
-
-    # Only parse string if needed
-    if isinstance(raw_val, str) and should_parse_string(raw_val, expected_type):
-        try:
-            raw_val = ast.literal_eval(raw_val)
-        except (SyntaxError, ValueError):
-            pass  # Keep as string if not a literal
-
-    try:
-        adapter = TypeAdapter(
-            expected_type,
-            config=ConfigDict(
-                arbitrary_types_allowed=True,
-                strict=strict,
-                validate_assignment=True,
-            )
-        )
-        logger.debug(f"Validating {path}: {raw_val} against {expected_type} (strict={strict})")
-        return adapter.validate_python(raw_val)
-    except ValidationError as e:
-        msg = f"Failed to parse key '{path}', with value={raw_val} and {expected_type=}. Full error: {e}"
-        if strict:
-            raise TypeError(msg) from e
-        else:
-            warnings.warn(msg)
-            return raw_val
 
 # -------------------------------------------
 # Flatten -> Nested conversion
