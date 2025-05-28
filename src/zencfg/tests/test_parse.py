@@ -1,4 +1,5 @@
 from zencfg.from_dict import parse_value_to_type
+from zencfg.config import ConfigBase
 from typing import List, Union, Optional
 import pytest
 from pathlib import Path

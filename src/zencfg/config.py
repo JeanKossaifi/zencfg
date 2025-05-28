@@ -60,7 +60,13 @@ def parse_value_to_type(value: Any, field_type: Type, strict: bool = True, path:
         return adapter.validate_python(value)
     except ValidationError as e:
         if strict:
-            raise TypeError(f"Invalid value for field '{path}': {str(e)}")
+            # Extract the error message from pydantic's ValidationError
+            error_msg = str(e)
+            # # Remove the validation error count prefix (e.g., "1 validation error for str")
+            # if "validation error" in error_msg:
+            #     error_msg = error_msg.split("\n", 1)[1].strip()
+            # Add the full path information
+            raise TypeError(f"Invalid value for field '{path}': {error_msg}")
         return value
 
 
@@ -123,7 +129,9 @@ class ConfigBase:
         """Override attribute setting to validate types."""
         if name in self.__annotations__:
             field_type = self.__annotations__[name]
-            value = parse_value_to_type(value, field_type, strict=True, path=name)
+            # Include class name in the path for better error messages
+            path = f"{self.__class__.__name__}.{name}"
+            value = parse_value_to_type(value, field_type, strict=True, path=path)
         super().__setattr__(name, value)
 
     def __init__(self, **kwargs):
