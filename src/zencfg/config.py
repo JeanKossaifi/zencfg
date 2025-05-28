@@ -48,46 +48,10 @@ def parse_value_to_type(value: Any, field_type: Type, strict: bool = True, path:
             raise TypeError(f"Value for field '{path}' must be an instance of {getattr(field_type, '__name__', str(field_type))}")
         return value
 
-    # Handle Union types
-    origin = get_origin(field_type)
-    if origin is Union:
-        args = get_args(field_type)
-        # Check if this is an Optional type (Union[T, None])
-        is_optional = len(args) == 2 and type(None) in args
-        if is_optional and value is None:
-            return None
-
-        for t in args:
-            if t is type(None):  # Skip None in Union
-                continue
-            try:
-                # For string values, try parsing as JSON first
-                if isinstance(value, str):
-                    try:
-                        adapter = TypeAdapter(t)
-                        return adapter.validate_json(value)
-                    except Exception:
-                        pass  # Fall back to normal parsing
-                return parse_value_to_type(value, t, strict, path)
-            except TypeError:
-                continue
-        if strict:
-            raise TypeError(f"Value {value} for field '{path}' does not match any type in Union {field_type}")
-        return value
-
-    # Handle List types
-    if origin is list:
-        if not isinstance(value, (list, tuple)):
-            if strict:
-                raise TypeError(f"Field '{path}' must be a list, got {type(value)}")
-            return value
-        item_type = get_args(field_type)[0]
-        return [parse_value_to_type(item, item_type, strict, f"{path}[{i}]") for i, item in enumerate(value)]
-
-    # Handle basic types with pydantic
+    # Let pydantic handle everything else
     try:
         adapter = TypeAdapter(field_type)
-        # If value is a string, try to parse it as JSON first
+        # For string values, try parsing as JSON first
         if isinstance(value, str):
             try:
                 return adapter.validate_json(value)

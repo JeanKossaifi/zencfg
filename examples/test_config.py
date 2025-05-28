@@ -1,5 +1,6 @@
 from zencfg import ConfigBase, cfg_from_commandline
-from typing import Union, List
+from typing import Union, List, Optional
+from pathlib import Path
 
 """
 This example script shows how to define a config class with nested configurations.
@@ -18,6 +19,7 @@ class ModelConfig(ConfigBase):
 class DiT(ModelConfig):
     layers: Union[int, List[int]] = [16, 8]
     version: str = '2.0.0'
+    dropout: Optional[float] = None
 
 class Unet(ModelConfig):
     conv: str = "DISCO"
@@ -35,8 +37,9 @@ class AdamW(OptimizerConfig):
     weight_decay: float = 0.01
 
 class Config(ConfigBase):
-    model: ModelConfig
+    model: ModelConfig = DiT()
     opt: OptimizerConfig = AdamW()
+    path: Union[str, Path, None] = None
 
 if __name__ == "__main__":
     c = cfg_from_commandline(Config, strict=True)
