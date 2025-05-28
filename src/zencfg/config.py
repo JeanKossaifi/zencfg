@@ -26,7 +26,7 @@ def parse_value_to_type(value: Any, field_type: Type, strict: bool = True, path:
     field_type : Type
         The expected type
     strict : bool
-        If True, raises on type conversion errors
+        If True, raises on type conversion errors. If False, falls back to original value if conversion fails.
     path : str
         Path in the config hierarchy, used for error messages
         
@@ -38,7 +38,7 @@ def parse_value_to_type(value: Any, field_type: Type, strict: bool = True, path:
     Raises
     ------
     TypeError
-        If value cannot be converted to the expected type
+        If value cannot be converted to the expected type and strict=True
     """
     # Handle ConfigBase types
     if is_configbase_type(field_type):
@@ -48,10 +48,8 @@ def parse_value_to_type(value: Any, field_type: Type, strict: bool = True, path:
             raise TypeError(f"Value for field '{path}' must be an instance of {getattr(field_type, '__name__', str(field_type))}")
         return value
 
-    # Let pydantic handle everything else
+    adapter = TypeAdapter(field_type)
     try:
-        adapter = TypeAdapter(field_type)
-        # For string values, try parsing as JSON first
         if isinstance(value, str):
             try:
                 return adapter.validate_json(value)
@@ -67,6 +65,7 @@ def parse_value_to_type(value: Any, field_type: Type, strict: bool = True, path:
             #     error_msg = error_msg.split("\n", 1)[1].strip()
             # Add the full path information
             raise TypeError(f"Invalid value for field '{path}': {error_msg}")
+        # Non-strict: just return the original value
         return value
 
 
