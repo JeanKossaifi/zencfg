@@ -132,20 +132,29 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
     # 2) Gather type hints & defaults from the actual class
     type_hints = get_type_hints(actual_cls, include_extras=True)
     defaults = {}
+    class_fields = set()
+    
+    # Internal attributes that shouldn't be configurable
+    INTERNAL_ATTRS = {'_registry'}
+    
     for attr_name in dir(actual_cls):
-        if not attr_name.startswith("__"):
+        # Skip internal attributes and callable attributes
+        if (attr_name not in INTERNAL_ATTRS and 
+            not attr_name.startswith("__") and 
+            not callable(getattr(actual_cls, attr_name))):
             val = getattr(actual_cls, attr_name)
-            if not callable(val):
-                defaults[attr_name] = val
+            defaults[attr_name] = val
+            class_fields.add(attr_name)
 
-    # 3) Validate unknown keys
-    recognized_keys = set(type_hints.keys()) | {"_config_name"}
+    # 3) Validate unknown keys - include both typed and untyped fields
+    recognized_keys = set(type_hints.keys()) | class_fields | {"_config_name"}
     for key in nested_dict:
         if key not in recognized_keys:
             full_path = join_path(path, key)
             raise ValueError(
-                f"Unknown key '{full_path}' in {actual_cls.__name__}. "
+                f"Got key '{full_path}' that is not a valid field for {actual_cls.__name__}. "
                 "Check for typos or remove unused config keys."
+                f"Valid fields are: {recognized_keys}."
             )
 
     # 4) Build init_values
@@ -197,6 +206,13 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
                         init_values[field_name] = None
             else:
                 init_values[field_name] = default_val
+
+    # 4b) Handle fields without type hints
+    for field_name in class_fields - set(type_hints.keys()):
+        if field_name in nested_dict:
+            init_values[field_name] = nested_dict[field_name]
+        elif field_name in defaults:
+            init_values[field_name] = defaults[field_name]
 
     # 5) Instantiate
     instance = actual_cls.__new__(actual_cls)

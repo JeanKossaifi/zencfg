@@ -40,6 +40,7 @@ class Config(ConfigBase):
     model: ModelConfig = DiT()
     opt: OptimizerConfig = AdamW()
     path: Union[str, Path, None] = None
+    other = 'NOTYPE'
 
 if __name__ == "__main__":
     c = cfg_from_commandline(Config, strict=True)

@@ -188,12 +188,86 @@ def test_no_subclass():
     class Config(ConfigBase):
         model: ModelConfig
         opt: OptimizerConfig = OptimizerConfig()
+        scheduler: SchedulerConfig = SchedulerConfig()
 
     data = {
-        "opt.lr": "10",
+        "model._config_name": "dit",
+        "opt._config_name": "adamw",
+        "opt.lr": "0.005",
+        "opt.weight_decay": "0.1",
+        "opt.param": "5",
     }
-    result = cfg_from_flat_dict(Config, data)
-    assert result.opt._config_name == 'optimizerconfig'
-    assert result.opt.lr == 10
+    cfg = cfg_from_flat_dict(Config, data, strict=True)
+
+    assert cfg.opt._config_name == "adamw"
+    assert cfg.opt.lr == 0.005
+    assert cfg.opt.weight_decay == 0.1
+    assert cfg.opt.param == 5
 
 
+def test_untyped_fields_from_dict():
+    """Test that fields without type hints are properly handled."""
+    class ConfigWithUntyped(ConfigBase):
+        typed_field: str = "default_typed"
+        untyped_field = "default_untyped"
+        another_untyped = 42
+
+    data = {
+        "typed_field": "new_typed_value",
+        "untyped_field": "new_untyped_value", 
+        "another_untyped": 100
+    }
+    
+    cfg = cfg_from_flat_dict(ConfigWithUntyped, data, strict=True)
+    assert cfg.typed_field == "new_typed_value"
+    assert cfg.untyped_field == "new_untyped_value"
+    assert cfg.another_untyped == 100
+    
+    # Test with partial data
+    data_partial = {
+        "typed_field": "partial_test",
+        "untyped_field": "partial_untyped"
+    }
+    
+    cfg_partial = cfg_from_flat_dict(ConfigWithUntyped, data_partial, strict=True)
+    assert cfg_partial.typed_field == "partial_test"
+    assert cfg_partial.untyped_field == "partial_untyped"
+    assert cfg_partial.another_untyped == 42  # Should keep default
+
+
+def test_untyped_fields_with_nested_config():
+    """Test that untyped fields work correctly alongside nested ConfigBase fields."""
+    class NestedConfig(ConfigBase):
+        nested_param: str = "nested_default"
+    
+    class ConfigWithBoth(ConfigBase):
+        nested: NestedConfig = NestedConfig()
+        typed_field: int = 10
+        untyped_field = "untyped_default"
+    
+    data = {
+        "nested.nested_param": "new_nested_value",
+        "typed_field": "20",  # Should parse to int
+        "untyped_field": "new_untyped_value"
+    }
+    
+    cfg = cfg_from_flat_dict(ConfigWithBoth, data, strict=True)
+    assert cfg.nested.nested_param == "new_nested_value"
+    assert cfg.typed_field == 20
+    assert cfg.untyped_field == "new_untyped_value"
+
+
+def test_internal_attributes_excluded():
+    """Test that internal attributes like _registry are properly excluded from configuration."""
+    class ConfigWithInternal(ConfigBase):
+        public_field: str = "public"
+        _registry = {"test": "should_be_excluded"}
+    
+    data = {"public_field": "new_value"}
+    
+    cfg = cfg_from_flat_dict(ConfigWithInternal, data, strict=True)
+    assert cfg.public_field == "new_value"
+    
+    cfg_dict = cfg.to_dict()
+    assert "_registry" not in cfg_dict
+    assert "public_field" in cfg_dict
