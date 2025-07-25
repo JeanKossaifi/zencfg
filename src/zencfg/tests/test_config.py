@@ -1,5 +1,5 @@
 import pytest
-from typing import List, Union
+from typing import List, Union, Optional
 
 from ..config import ConfigBase
 
@@ -67,3 +67,26 @@ def test_type_validation():
         TestConfig(float_field="not_a_float")
     with pytest.raises(TypeError):
         TestConfig(list_field=["not_an_int"])
+
+
+def test_list_of_configbase_default():
+    """Test that a List[ConfigBase] with instantiated objects as default works (deep learning context)."""
+    from typing import List, Optional
+    class LayerConfig(ConfigBase):
+        type: str  # e.g., 'conv', 'linear', 'relu'
+        out_features: Optional[int] = None
+        kernel_size: Optional[int] = None
+        activation: Optional[str] = None
+    class ModelConfig(ConfigBase):
+        layers: List[LayerConfig] = [
+            LayerConfig(type="conv", out_features=32, kernel_size=3, activation="relu"),
+            LayerConfig(type="linear", out_features=10, activation="softmax")
+        ]
+        name: str = "MyNet"
+    # Should not raise
+    cfg = ModelConfig()
+    assert isinstance(cfg.layers, list)
+    assert isinstance(cfg.layers[0], LayerConfig)
+    assert cfg.layers[0].type == "conv"
+    assert cfg.layers[1].activation == "softmax"
+    assert cfg.name == "MyNet"

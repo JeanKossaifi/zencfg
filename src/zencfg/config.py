@@ -40,7 +40,17 @@ def parse_value_to_type(value: Any, field_type: Type, strict: bool = True, path:
     TypeError
         If value cannot be converted to the expected type and strict=True
     """
-    # Handle ConfigBase types
+    origin = get_origin(field_type)
+    args = get_args(field_type)
+
+    # Handle List[...] of ConfigBase
+    if origin in (list, List) and args and is_configbase_type(args[0]):
+        if isinstance(value, list) and all(isinstance(v, args[0]) for v in value):
+            return value
+        # Otherwise, try to parse each element
+        return [parse_value_to_type(v, args[0], strict=strict, path=f"{path}[{i}]") for i, v in enumerate(value)]
+
+    # Handle direct ConfigBase types or Unions containing ConfigBase
     if is_configbase_type(field_type):
         if isinstance(value, field_type):
             return value

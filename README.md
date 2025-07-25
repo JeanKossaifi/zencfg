@@ -5,7 +5,7 @@ A Zen way to configure your Python packages while keeping your sanity.
 ## ⚡ Quick Start
 
 ```python
-from zencfg import ConfigBase, cfg_from_commandline
+from zencfg import ConfigBase, make_config_from_cli
 
 # Define base categories
 class ModelConfig(ConfigBase):
@@ -39,7 +39,7 @@ class ExperimentConfig(ConfigBase):
     batch_size: int = 32
 
 # Get config with command-line overrides
-config = cfg_from_commandline(ExperimentConfig)
+config = make_config_from_cli(ExperimentConfig)
 ```
 
 Switch between architectures and tune their specific parameters:
@@ -90,8 +90,8 @@ python train.py --model ditconfig --model.n_heads 16 --optimizer sgdconfig --opt
 Pure Python classes with no frameworks, no special syntax, and no additional dependencies. If you know Python, you know ZenCFG.
 
 ```python
-from zencfg import cfg_from_commandline
-config = cfg_from_commandline(MyConfig)  # That's it!
+from zencfg import make_config_from_cli
+config = make_config_from_cli(MyConfig)  # That's it!
 ```
 
 It was built originally to configure and manage scripts for Deep Learning experiments, but you can use it for any Python project.
@@ -181,15 +181,15 @@ config = Config(model = ModelConfig(_config_name='dit', layers=24))
 ## Instantiating a configuration with optional values from the command line
 
 The library also lets you override parameters from the configuration through the command line, 
-using `cfg_from_commandline`.
+using `make_config_from_cli`.
 
 For instance, you can create a script `main.py` containing:
 ```python
-from zencfg import cfg_from_commandline
+from zencfg import make_config_from_cli
 
 from YOUR_CONFIG_FILE import Config
 
-config = cfg_from_commandline(Config, strict=True)
+config = make_config_from_cli(Config, strict=True)
 ```
 
 You can then call your script via the command line. 
