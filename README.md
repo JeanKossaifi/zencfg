@@ -4,6 +4,12 @@ A Zen way to configure your Python packages while keeping your sanity.
 
 ## ⚡ Quick Start
 
+First install the library:
+
+```bash
+pip install zencfg
+```
+
 ```python
 from zencfg import ConfigBase, make_config_from_cli
 
