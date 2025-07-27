@@ -90,3 +90,34 @@ def test_list_of_configbase_default():
     assert cfg.layers[0].type == "conv"
     assert cfg.layers[1].activation == "softmax"
     assert cfg.name == "MyNet"
+
+
+def test_instantiate():
+    """Test basic instantiate functionality with both string and callable targets."""
+    
+    # Test 1: String target
+    class StringTargetConfig(ConfigBase):
+        _target_class = "collections.namedtuple"
+        typename: str = "Point"
+        field_names: list = ['x', 'y']
+    
+    config1 = StringTargetConfig()
+    Point = config1.instantiate()
+    
+    # Should create a namedtuple class
+    assert callable(Point)
+    point = Point(1, 2)
+    assert point.x == 1
+    assert point.y == 2
+    
+    # Test 2: Direct callable target
+    class CallableTargetConfig(ConfigBase):
+        _target_class = dict
+        name: str = "test"
+        value: int = 42
+    
+    config2 = CallableTargetConfig()
+    result = config2.instantiate()
+    
+    # Should create a dict with the config parameters
+    assert result == {"name": "test", "value": 42}

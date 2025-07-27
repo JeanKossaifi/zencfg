@@ -1,4 +1,6 @@
-from typing import Any, Dict, Type, Union, List, get_origin, get_args
+from typing import Any, Dict, Type, Union, List, get_origin, get_args, Optional, Callable
+import importlib
+import inspect
 from pydantic import TypeAdapter, ValidationError
 
 from .bunch import Bunch
@@ -129,6 +131,142 @@ class ConfigBase:
     """
     _registry = {} # Dict[str, Type["ConfigBase"]] = {}
     _config_name: str = "configbase"
+    _target_class: Optional[Union[str, Callable]] = None  # Optional target for instantiation
+
+    def _resolve_target_class(self) -> Optional[Callable]:
+        """Resolve _target_class to an actual callable.
+        
+        Returns
+        -------
+        Optional[Callable]
+            The resolved target class/function, or None if _target_class is not set
+            
+        Raises
+        ------
+        ImportError
+            If the target class cannot be imported
+        AttributeError
+            If the target class cannot be found in the module
+        """
+        if not hasattr(self, '_target_class') or self._target_class is None:
+            return None
+            
+        target = self._target_class
+        
+        # If it's already a callable, return it
+        if callable(target):
+            return target
+            
+        # If it's a string, try to import it
+        if isinstance(target, str):
+            if '.' not in target:
+                raise ValueError(f"String target class '{target}' must be a fully qualified name (e.g., 'torch.nn.Linear')")
+                
+            module_name, class_name = target.rsplit('.', 1)
+            try:
+                module = importlib.import_module(module_name)
+                return getattr(module, class_name)
+            except ImportError as e:
+                raise ImportError(f"Could not import module '{module_name}': {e}")
+            except AttributeError as e:
+                raise AttributeError(f"Module '{module_name}' has no attribute '{class_name}': {e}")
+        
+        raise TypeError(f"_target_class must be a callable or string, got {type(target)}")
+
+    def _extract_config_params(self) -> Dict[str, Any]:
+        """Extract configuration parameters for instantiation.
+        
+        Only excludes essential ZenCFG internal attributes. Everything else
+        (including private attributes and callables) is passed to the target class.
+        
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary of parameter names and values
+        """
+        params = {}
+        
+        # Only exclude the essential ZenCFG internals
+        zencfg_internals = {'_registry', '_config_name', '_target_class'}
+        
+        for name, value in vars(self).items():
+            if name in zencfg_internals:
+                continue
+            # Include everything else - let the target class decide what it wants
+            params[name] = value
+        
+        return params
+
+    def instantiate(self) -> Any:
+        """Instantiate the target class with config parameters.
+        
+        This method creates an instance of the class specified in _target_class
+        using the configuration parameters as constructor arguments.
+        
+        Only the current config is instantiated - nested ConfigBase objects
+        are passed as-is (not recursively instantiated).
+        
+        Returns
+        -------
+        Any
+            An instance of the target class
+            
+        Raises
+        ------
+        NotImplementedError
+            If _target_class is not set and this method is not overridden
+        ImportError
+            If the target class cannot be imported
+        TypeError
+            If the target class cannot be instantiated with the given parameters
+            
+        Examples
+        --------
+        You can specify the target class as a class directly or as a string:
+        >>> class LinearConfig(ConfigBase):
+        ...     _target_class = "torch.nn.Linear"
+        ...     in_features: int = 784
+        ...     out_features: int = 10
+        >>> config = LinearConfig()
+        >>> model = config.instantiate()  # Creates torch.nn.Linear(in_features=784, out_features=10)
+        
+        Alternatively, you can customize the instantiate method:
+        >>> class CustomConfig(ConfigBase):
+        ...     param1: int = 42
+        ...     def instantiate(self):
+        ...         return MyCustomClass(self.param1)
+        >>> config = CustomConfig()
+        >>> obj = config.instantiate()
+        """
+        target_class = self._resolve_target_class()
+        
+        if target_class is None:
+            raise NotImplementedError(
+                f"{self.__class__.__name__} must either define _target_class or override the instantiate() method"
+            )
+        
+        # Extract parameters from config
+        params = self._extract_config_params()
+        
+        # Try to instantiate
+        try:
+            return target_class(**params)
+        except TypeError as e:
+            # Get the signature for better error messages
+            try:
+                sig = inspect.signature(target_class)
+                available_params = list(sig.parameters.keys())
+                provided_params = list(params.keys())
+                
+                raise TypeError(
+                    f"Cannot instantiate {target_class.__name__} with provided parameters.\n"
+                    f"Available parameters: {available_params}\n"
+                    f"Provided parameters: {provided_params}\n"
+                    f"Original error: {e}"
+                )
+            except Exception:
+                # If we can't get signature info, just re-raise original error
+                raise e
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Override attribute setting to validate types."""
