@@ -224,20 +224,27 @@ class ConfigBase:
         Examples
         --------
         You can specify the target class as a class directly or as a string:
-        >>> class LinearConfig(ConfigBase):
-        ...     _target_class = "torch.nn.Linear"
-        ...     in_features: int = 784
-        ...     out_features: int = 10
-        >>> config = LinearConfig()
-        >>> model = config.instantiate()  # Creates torch.nn.Linear(in_features=784, out_features=10)
+
+        .. code-block:: python
+
+            >>> class LinearConfig(ConfigBase):
+            ...     _target_class = "torch.nn.Linear"
+            ...     in_features: int = 784
+            ...     out_features: int = 10
+            >>> config = LinearConfig()
+            >>> model = config.instantiate()  # Creates torch.nn.Linear(in_features=784, out_features=10)
         
         Alternatively, you can customize the instantiate method:
-        >>> class CustomConfig(ConfigBase):
-        ...     param1: int = 42
-        ...     def instantiate(self):
-        ...         return MyCustomClass(self.param1)
-        >>> config = CustomConfig()
-        >>> obj = config.instantiate()
+
+        .. code-block:: python
+
+            >>> class CustomConfig(ConfigBase):
+            ...     param1: int = 42
+            ...     def instantiate(self):
+            ...         return MyCustomClass(self.param1)
+            >>> config = CustomConfig()
+            >>> obj = config.instantiate()
+
         """
         target_class = self._resolve_target_class()
         

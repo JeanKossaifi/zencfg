@@ -14,8 +14,8 @@ from .config import ConfigBase
 def cfg_from_commandline(config_class: Type[ConfigBase], strict: bool = False) -> ConfigBase:
     """Takes a Config class and returns an instance of it, with values updated from command line.
     
-    .. deprecated:: 
-        Use make_config_from_cli() instead.
+    .. deprecated:: 1.0.0
+        Use ``make_config_from_cli()`` instead.
     """
     warnings.warn(
         "cfg_from_commandline is deprecated. Use make_config_from_cli() instead.",
