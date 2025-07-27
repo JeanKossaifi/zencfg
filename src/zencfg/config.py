@@ -99,13 +99,13 @@ class ConfigBase:
     """Base class for all config objects, instanciates a new ConfigBase object.
         
     **Class creation**
-    We manually enable inheritance of class-level attributes by, see notes for detail.
-    You can specify which class you actually want to create by passing a "_config_config_name" key in kwargs.
-    The subclass with that _config_name will be instantiated instead of the BaseConfig.
+    We manually enable inheritance of class-level attributes (see notes for detail).
+    You can specify which configuration (sub)-class you actually want to create by passing a `"_config_name"` key in kwargs.
+    The subclass with that `_config_name` will be instantiated instead of the `BaseConfig`.
     
     **Class hierarchy**
     Each direct descendent from ConfigBase will have a _registry attribute and track their children.
-    In other words, for each main config category, create one subclass.
+    In other words, for each main configuration category, create one subclass.
     Each config instance in this category should inherit from that subclass.        
         
     Notes
@@ -113,13 +113,14 @@ class ConfigBase:
     Note that by default, attributes are **not** inherited since they
     are class-level attributes, not actual constructor parameters.
     By default, Python does not automatically copy class attributes into 
-    instance attributes at __init__ time. 
+    instance attributes at ``__init__`` time. 
     
-    To fix this, we manually collect the defaults: 
+    To fix this, we manually collect the defaults:
+
     * gather_defaults(cls):
         * walk the entire Method Resolution Order (MRO), from the root (object) 
           up to the child class, collecting all fields that are not private or callable.
-        * Because we do for base in reversed(cls.__mro__):, 
+        * Because we do ``for base in reversed(cls.__mro__):``, 
           we effectively start from the oldest parent 
           (like Checkpoint) and end at the child (CheckpointSubclass),
           so the child can override any fields if it redefines them.

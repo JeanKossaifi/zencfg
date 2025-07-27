@@ -1,21 +1,22 @@
 import sys
 import warnings
 from typing import Type, Union, Optional, Any
+from pathlib import Path
 
 from .from_dict import cfg_from_flat_dict
 from .config import ConfigBase
 
 
-def make_config(source: Union[Type[ConfigBase], ConfigBase, str], name: Optional[str] = None, /, **overrides) -> ConfigBase:
+def make_config(source: Union[Type[ConfigBase], ConfigBase, str, Path], name: Optional[str] = None, /, **overrides) -> ConfigBase:
     """Create a config instance from any source with overrides.
     
     Parameters
     ----------
-    source : Union[Type[ConfigBase], ConfigBase, str]
+    source : Union[Type[ConfigBase], ConfigBase, str, Path]
         Source to create config from:
         - ConfigBase class: instantiate with overrides
         - ConfigBase instance: apply overrides to copy
-        - str: file path to load config from
+        - str/Path: file path to load config from
     name : str, optional
         Required when source is a file path. Name of class/instance to load.
     **overrides
@@ -33,6 +34,7 @@ def make_config(source: Union[Type[ConfigBase], ConfigBase, str], name: Optional
     >>> 
     >>> # From file
     >>> config = make_config("configs.py", "TrainingConfig", epochs=100)
+    >>> config = make_config(Path("configs.py"), "TrainingConfig", epochs=100)
     >>>
     >>> # From instance
     >>> base = TrainingConfig()
@@ -50,24 +52,24 @@ def make_config(source: Union[Type[ConfigBase], ConfigBase, str], name: Optional
         current_dict.update({k: str(v) for k, v in overrides.items()})  # Convert to strings for cfg_from_flat_dict
         return cfg_from_flat_dict(source.__class__, current_dict)
         
-    elif isinstance(source, str):
+    elif isinstance(source, (str, Path)):
         # It's a file path - load and handle
         if name is None:
             raise ValueError("name parameter is required when loading from file")
         from .from_file import cfg_from_file
-        loaded_item = cfg_from_file(source, name)
+        loaded_item = cfg_from_file(str(source), name)
         return make_config(loaded_item, **overrides)  # Recursive call
         
     else:
         raise TypeError(f"Unsupported source type: {type(source)}. Expected ConfigBase class, instance, or file path.")
 
 
-def make_config_from_cli(source: Union[Type[ConfigBase], ConfigBase, str], name: Optional[str] = None, /, strict: bool = False) -> ConfigBase:
+def make_config_from_cli(source: Union[Type[ConfigBase], ConfigBase, str, Path], name: Optional[str] = None, /, strict: bool = False) -> ConfigBase:
     """Create a config instance with command-line argument overrides.
     
     Parameters
     ----------
-    source : Union[Type[ConfigBase], ConfigBase, str]
+    source : Union[Type[ConfigBase], ConfigBase, str, Path]
         Source to create config from (class, instance, or file path)
     name : str, optional
         Required when source is a file path. Name of class/instance to load.
@@ -86,6 +88,7 @@ def make_config_from_cli(source: Union[Type[ConfigBase], ConfigBase, str], name:
     >>>
     >>> # From file  
     >>> config = make_config_from_cli("configs.py", "TrainingConfig")
+    >>> config = make_config_from_cli(Path("configs.py"), "TrainingConfig")
     """
     args = sys.argv[1:]  # Skip the script name
 
@@ -108,12 +111,12 @@ def make_config_from_cli(source: Union[Type[ConfigBase], ConfigBase, str], name:
         current_dict.update(arg_dict)  # CLI args override existing values
         return cfg_from_flat_dict(source.__class__, current_dict, strict=strict)
         
-    elif isinstance(source, str):
+    elif isinstance(source, (str, Path)):
         # It's a file path - load and handle
         if name is None:
             raise ValueError("name parameter is required when loading from file")
         from .from_file import cfg_from_file
-        loaded_item = cfg_from_file(source, name)
+        loaded_item = cfg_from_file(str(source), name)
         return make_config_from_cli(loaded_item, strict=strict)  # Recursive call
         
     else:

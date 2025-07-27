@@ -8,7 +8,7 @@ import importlib.util
 from .config import ConfigBase
 
 
-def cfg_from_file(file_path: str, config_name: str) -> Union[Type[ConfigBase], ConfigBase]:
+def cfg_from_file(file_path: Union[str, Path], config_name: str) -> Union[Type[ConfigBase], ConfigBase]:
     """Load a config class or instance from a file."""
     file_path = Path(file_path).resolve()
     
