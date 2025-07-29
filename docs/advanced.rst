@@ -67,7 +67,7 @@ You can export your configs to different formats.
    nested_dict = config.to_dict(flatten=False)
    
    # Import from dictionary
-   new_config = cfg_from_flat_dict(ExportableConfig, flat_dict)
-   new_config_nested = cfg_from_nested_dict(ExportableConfig, nested_dict) 
+   new_config = make_config_from_flat_dict(ExportableConfig, flat_dict)
+   new_config_nested = make_config_from_nested_dict(ExportableConfig, nested_dict) 
 
 Note that this could be easily extended to other formats.

@@ -3,7 +3,7 @@ import warnings
 from typing import Type, Union, Optional, Any
 from pathlib import Path
 
-from .from_dict import cfg_from_flat_dict
+from .from_dict import make_config_from_flat_dict
 from .config import ConfigBase
 
 
@@ -49,15 +49,15 @@ def make_config(source: Union[Type[ConfigBase], ConfigBase, str, Path], name: Op
         if not overrides:
             return source  # No changes needed
         current_dict = source.to_dict(flatten=True)
-        current_dict.update({k: str(v) for k, v in overrides.items()})  # Convert to strings for cfg_from_flat_dict
-        return cfg_from_flat_dict(source.__class__, current_dict)
+        current_dict.update({k: str(v) for k, v in overrides.items()})  # Convert to strings for make_config_from_flat_dict
+        return make_config_from_flat_dict(source.__class__, current_dict)
         
     elif isinstance(source, (str, Path)):
         # It's a file path - load and handle
         if name is None:
             raise ValueError("name parameter is required when loading from file")
-        from .from_file import cfg_from_file
-        loaded_item = cfg_from_file(str(source), name)
+        from .from_file import load_config_from_file
+        loaded_item = load_config_from_file(str(source), name)
         return make_config(loaded_item, **overrides)  # Recursive call
         
     else:
@@ -103,20 +103,20 @@ def make_config_from_cli(source: Union[Type[ConfigBase], ConfigBase, str, Path],
 
     if isinstance(source, type) and issubclass(source, ConfigBase):
         # It's a class - create instance with CLI overrides
-        return cfg_from_flat_dict(source, arg_dict, strict=strict)
+        return make_config_from_flat_dict(source, arg_dict, strict=strict)
         
     elif isinstance(source, ConfigBase):
         # It's an instance - merge CLI overrides with existing values
         current_dict = source.to_dict(flatten=True)
         current_dict.update(arg_dict)  # CLI args override existing values
-        return cfg_from_flat_dict(source.__class__, current_dict, strict=strict)
+        return make_config_from_flat_dict(source.__class__, current_dict, strict=strict)
         
     elif isinstance(source, (str, Path)):
         # It's a file path - load and handle
         if name is None:
             raise ValueError("name parameter is required when loading from file")
-        from .from_file import cfg_from_file
-        loaded_item = cfg_from_file(str(source), name)
+        from .from_file import load_config_from_file
+        loaded_item = load_config_from_file(str(source), name)
         return make_config_from_cli(loaded_item, strict=strict)  # Recursive call
         
     else:

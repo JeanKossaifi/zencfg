@@ -5,10 +5,10 @@ from pathlib import Path
 from typing import List
 
 from ..config import ConfigBase
-from ..from_file import cfg_from_file
+from ..from_file import load_config_from_file
 
 
-def test_cfg_from_file():
+def test_load_config_from_file():
     """Test loading config from file."""
     # Create a temporary config file
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
@@ -27,7 +27,7 @@ class TestExperimentConfig(ConfigBase):
     
     try:
         # Test simple loading
-        ExperimentConfig = cfg_from_file(temp_file, 'TestExperimentConfig')
+        ExperimentConfig = load_config_from_file(temp_file, 'TestExperimentConfig')
         config = ExperimentConfig()
         
         assert config.batch_size == 32
@@ -41,7 +41,7 @@ class TestExperimentConfig(ConfigBase):
         os.unlink(temp_file)
 
 
-def test_cfg_from_file_invalid_class():
+def test_load_config_from_file_invalid_class():
     """Test that loading non-ConfigBase classes raises an error."""
     # Create a temporary file with a non-ConfigBase class
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
@@ -53,12 +53,12 @@ class NotAConfig:
     
     try:
         with pytest.raises(TypeError, match="is not a ConfigBase subclass"):
-            cfg_from_file(temp_file, 'NotAConfig')
+            load_config_from_file(temp_file, 'NotAConfig')
     finally:
         os.unlink(temp_file)
 
 
-def test_cfg_from_file_missing_class():
+def test_load_config_from_file_missing_class():
     """Test that loading non-existent class raises an error."""
     # Create a temporary file
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
@@ -72,6 +72,6 @@ class TestConfig(ConfigBase):
     
     try:
         with pytest.raises(AttributeError):
-            cfg_from_file(temp_file, 'NonExistentConfig')
+            load_config_from_file(temp_file, 'NonExistentConfig')
     finally:
         os.unlink(temp_file) 

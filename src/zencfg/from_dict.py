@@ -83,7 +83,7 @@ def join_path(base: str, field_name: str) -> str:
 # -------------------------------------------
 # Build config from nested dict (top-down)
 # -------------------------------------------
-def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: bool,
+def make_config_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: bool,
                       path: str = "") -> Any:
     """Build a config instance from a nested dictionary with inheritance support.
     
@@ -185,7 +185,7 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
                 if isinstance(default_val, cb_type) and "_config_name" not in merged_dict:
                     merged_dict["_config_name"] = getattr(default_val, "_config_name", None)
 
-                nested_val = cfg_from_nested_dict(cb_type, merged_dict, strict, path=full_path)
+                nested_val = make_config_from_nested_dict(cb_type, merged_dict, strict, path=full_path)
                 init_values[field_name] = nested_val
             else:
                 # For non-ConfigBase fields, parse the value according to its type
@@ -225,7 +225,7 @@ def cfg_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], strict: b
     return instance
 
 
-def cfg_from_flat_dict(config_cls: Any, flat_dict: Dict[str, Any], strict: bool = False) -> Any:
+def make_config_from_flat_dict(config_cls: Any, flat_dict: Dict[str, Any], strict: bool = False) -> Any:
     """Instantiates a config class from a flat dictionary.
     
     Parameters
@@ -244,5 +244,5 @@ def cfg_from_flat_dict(config_cls: Any, flat_dict: Dict[str, Any], strict: bool 
         An instance of 'config_cls' with values from 'flat_dict' with the loaded values.
     """
     nested = flat_dict_to_nested(flat_dict)
-    return cfg_from_nested_dict(config_cls, nested, strict)
+    return make_config_from_nested_dict(config_cls, nested, strict)
 

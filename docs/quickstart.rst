@@ -114,12 +114,12 @@ For larger projects, you can organize configurations in separate files:
 
 .. code-block:: python
 
-   from zencfg import make_config_from_cli, cfg_from_file
+   from zencfg import make_config_from_cli, load_config_from_file
    from pathlib import Path
 
    path_to_config = Path("configs/experiment.py")
    # Option 1: Load class and use make_config_from_cli, by passing the path to the file and the class name
-   ExperimentConfig = cfg_from_file(path_to_config, "ExperimentConfig")
+   ExperimentConfig = load_config_from_file(path_to_config, "ExperimentConfig")
    # Optionally, you can override specific parameters from the command line:
    config = make_config_from_cli(ExperimentConfig)
 
@@ -129,7 +129,7 @@ For larger projects, you can organize configurations in separate files:
    # Both approaches support command-line overrides
    # python main.py --model.layers 24 --batch_size 64
 
-The main difference: `cfg_from_file` returns the class for reuse, while `make_config_from_cli` directly creates an instance.
+The main difference: `load_config_from_file` returns the class for reuse, while `make_config_from_cli` directly creates an instance.
 
 Next Steps
 ----------

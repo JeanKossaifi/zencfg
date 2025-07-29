@@ -2,7 +2,7 @@ import pytest
 from typing import List, Union
 
 from ..config import ConfigBase
-from ..from_dict import cfg_from_flat_dict, flat_dict_to_nested
+from ..from_dict import make_config_from_flat_dict, flat_dict_to_nested
 
 
 class ModelConfig(ConfigBase):
@@ -51,7 +51,7 @@ def test_simple_config_from_dict(config_class):
         "opt.lr": "0.005", # should parse to float
         "opt.weight_decay": "0.1",
     }
-    cfg = cfg_from_flat_dict(config_class, data, strict=True)
+    cfg = make_config_from_flat_dict(config_class, data, strict=True)
 
     # 'cfg.model' should be an instance of the DiT subclass
     assert cfg.model._config_name.lower() == "dit"
@@ -74,7 +74,7 @@ def test_composite_style_from_dict(config_class):
         "model.submodel.conv": "Success",
         "opt._config_name": "adamw",
     }
-    cfg = cfg_from_flat_dict(config_class, data)
+    cfg = make_config_from_flat_dict(config_class, data)
 
     assert cfg.model.submodel._config_name.lower() == "unet"
     assert cfg.model.submodel.conv == "Success"
@@ -100,7 +100,7 @@ def test_invalid_keys_from_dict(config_class):
         "model.version": '0.1.2',
     }
     with pytest.raises(ValueError):
-        cfg_from_flat_dict(config_class, data)
+        make_config_from_flat_dict(config_class, data)
 
     # Just a wrong name
     data = {
@@ -108,7 +108,7 @@ def test_invalid_keys_from_dict(config_class):
         "model.version": '0.1.2',
     }
     with pytest.raises(ValueError):
-        cfg_from_flat_dict(config_class, data)
+        make_config_from_flat_dict(config_class, data)
 
     # Right name, wrong parameter
     data = {
@@ -116,7 +116,7 @@ def test_invalid_keys_from_dict(config_class):
         "model.unexistant_param": 'DOES NOT EXIST',
     }
     with pytest.raises(ValueError):
-        cfg_from_flat_dict(config_class, data)
+        make_config_from_flat_dict(config_class, data)
 
 
 def test_flat_dict_to_nested_simple():
@@ -169,7 +169,7 @@ def test_preserve_config_defaults_args(config_class):
     data = {
         "opt.param": "10",
     }
-    result = cfg_from_flat_dict(Config, data)
+    result = make_config_from_flat_dict(Config, data)
     assert result.opt._config_name == 'adamw', f"Expected 'adamw' but got {result}"
     assert result.opt.weight_decay == 0.01
     assert result.opt.param == 10
@@ -197,7 +197,7 @@ def test_no_subclass():
         "opt.weight_decay": "0.1",
         "opt.param": "5",
     }
-    cfg = cfg_from_flat_dict(Config, data, strict=True)
+    cfg = make_config_from_flat_dict(Config, data, strict=True)
 
     assert cfg.opt._config_name == "adamw"
     assert cfg.opt.lr == 0.005
@@ -218,7 +218,7 @@ def test_untyped_fields_from_dict():
         "another_untyped": 100
     }
     
-    cfg = cfg_from_flat_dict(ConfigWithUntyped, data, strict=True)
+    cfg = make_config_from_flat_dict(ConfigWithUntyped, data, strict=True)
     assert cfg.typed_field == "new_typed_value"
     assert cfg.untyped_field == "new_untyped_value"
     assert cfg.another_untyped == 100
@@ -229,7 +229,7 @@ def test_untyped_fields_from_dict():
         "untyped_field": "partial_untyped"
     }
     
-    cfg_partial = cfg_from_flat_dict(ConfigWithUntyped, data_partial, strict=True)
+    cfg_partial = make_config_from_flat_dict(ConfigWithUntyped, data_partial, strict=True)
     assert cfg_partial.typed_field == "partial_test"
     assert cfg_partial.untyped_field == "partial_untyped"
     assert cfg_partial.another_untyped == 42  # Should keep default
@@ -251,7 +251,7 @@ def test_untyped_fields_with_nested_config():
         "untyped_field": "new_untyped_value"
     }
     
-    cfg = cfg_from_flat_dict(ConfigWithBoth, data, strict=True)
+    cfg = make_config_from_flat_dict(ConfigWithBoth, data, strict=True)
     assert cfg.nested.nested_param == "new_nested_value"
     assert cfg.typed_field == 20
     assert cfg.untyped_field == "new_untyped_value"
@@ -265,7 +265,7 @@ def test_internal_attributes_excluded():
     
     data = {"public_field": "new_value"}
     
-    cfg = cfg_from_flat_dict(ConfigWithInternal, data, strict=True)
+    cfg = make_config_from_flat_dict(ConfigWithInternal, data, strict=True)
     assert cfg.public_field == "new_value"
     
     cfg_dict = cfg.to_dict()

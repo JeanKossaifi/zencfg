@@ -48,26 +48,26 @@ The configuration to load can be given as class, instance, or file.
 
 .. autofunction:: zencfg.make_config_from_cli
 
-cfg_from_flat_dict
-~~~~~~~~~~~~~~~~~~
+make_config_from_flat_dict
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Create a configuration instance from a flat dictionary (with dot notation to signify nested keys).
 
-.. autofunction:: zencfg.cfg_from_flat_dict
+.. autofunction:: zencfg.make_config_from_flat_dict
 
-cfg_from_nested_dict
-~~~~~~~~~~~~~~~~~~~~
+make_config_from_nested_dict
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Create a configuration instance from a nested dictionary structure.
 
-.. autofunction:: zencfg.cfg_from_nested_dict
+.. autofunction:: zencfg.make_config_from_nested_dict
 
-cfg_from_file
-~~~~~~~~~~~~~
+load_config_from_file
+~~~~~~~~~~~~~~~~~~~~
 
 Load a configuration class or instance from a Python file.
 
-.. autofunction:: zencfg.cfg_from_file
+.. autofunction:: zencfg.load_config_from_file
 
 Deprecated Functions
 --------------------
