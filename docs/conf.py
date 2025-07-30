@@ -32,6 +32,11 @@ html_show_sourcelink = False
 
 html_theme_options = {
     'show_prev_next': True,
+    'logo': {
+        'image_light': '_static/ZenCFG-logo.png',
+        'image_dark': '_static/ZenCFG-logo.png',  # You can use a different logo for dark mode
+        'text': 'ZenCFG',  # Text to display alongside the logo
+    },
     'icon_links': [
         {
             'name': 'GitHub',
@@ -44,6 +49,11 @@ html_theme_options = {
 html_sidebars = {
     "**": []
 }
+
+# Static files
+html_static_path = ['_static']
+html_css_files = ['custom.css']
+html_logo = '_static/ZenCFG-logo.png'
 
 # Options
 templates_path = ['_templates']

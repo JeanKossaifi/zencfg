@@ -1,0 +1,185 @@
+/* ZenCFG Custom Zen Theme - Balanced zen aesthetics with excellent readability */
+
+/* Color Palette:
+   Navbar: #f0e5d2 (your specific warm cream/beige)
+   Content: #fdfcf8 (very light warm white for readability)
+   Sidebar: #f8f4ed (light warm background)
+   Footer: #e8dcc6 (warm tan)
+   Text: #2d2416 (high contrast dark brown)
+   Secondary text: #5d4e3a (medium brown)
+   Links: #8b6914 (warm golden brown)
+   Code background: #f0ebe0 (distinct light cream)
+   Borders: #d4c4a8 (soft tan)
+*/
+
+/* Base styling */
+html {
+    background-color: #fdfcf8 !important;
+}
+
+body {
+    background-color: #fdfcf8 !important;
+    color: #2d2416 !important;
+}
+
+/* Header/navbar - YOUR specific color */
+.bd-header {
+    background-color: #f0e5d2 !important;
+    border-bottom: 1px solid #d4c4a8 !important;
+}
+
+/* Main content areas - light background for readability */
+.bd-main .bd-content .bd-article-container,
+.bd-content,
+article.bd-article {
+    background-color: #fdfcf8 !important;
+}
+
+/* Sidebars - slightly warmer than content */
+.bd-sidebar-primary,
+.bd-sidebar-secondary {
+    background-color: #f8f4ed !important;
+    border-right: 1px solid #d4c4a8 !important;
+}
+
+/* Footer - different warm tone */
+.bd-footer {
+    background-color: #e8dcc6 !important;
+    border-top: 1px solid #d4c4a8 !important;
+    color: #5d4e3a !important;
+}
+
+/* Text and typography - high contrast for readability */
+h1, h2, h3, h4, h5, h6 {
+    color: #2d2416 !important;
+}
+
+.bd-article p,
+.bd-article li,
+.bd-article dd {
+    color: #2d2416 !important;
+}
+
+/* Links - warm golden brown with good contrast */
+a {
+    color: #8b6914 !important;
+}
+
+a:hover {
+    color: #a67c52 !important;
+}
+
+/* Navigation links */
+.bd-sidebar .bd-sidebar-navigation a {
+    color: #5d4e3a !important;
+}
+
+.bd-sidebar .bd-sidebar-navigation a:hover {
+    color: #8b6914 !important;
+    background-color: #f0ebe0 !important;
+}
+
+/* Active navigation items */
+.bd-sidebar .bd-sidebar-navigation .current > a {
+    color: #8b6914 !important;
+    background-color: #f0ebe0 !important;
+    border-left: 3px solid #a67c52 !important;
+}
+
+/* Code blocks and inline code - distinct backgrounds for clarity */
+.highlight {
+    background-color: #f0ebe0 !important;
+    border: 1px solid #d4c4a8 !important;
+    border-radius: 4px;
+    padding: 12px !important;
+}
+
+code {
+    background-color: #f0ebe0 !important;
+    color: #2d2416 !important;
+    border: 1px solid #d4c4a8 !important;
+    padding: 2px 4px !important;
+    border-radius: 3px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
+}
+
+/* Tables - clean and readable */
+table {
+    border-color: #d4c4a8 !important;
+    background-color: #fdfcf8 !important;
+}
+
+table th {
+    background-color: #f0ebe0 !important;
+    border-color: #d4c4a8 !important;
+    color: #2d2416 !important;
+}
+
+table td {
+    border-color: #d4c4a8 !important;
+    background-color: #fdfcf8 !important;
+}
+
+/* Search box - in navbar area */
+.bd-search input {
+    background-color: #fdfcf8 !important;
+    border: 1px solid #d4c4a8 !important;
+    color: #2d2416 !important;
+}
+
+.bd-search input::placeholder {
+    color: #5d4e3a !important;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: #8b6914 !important;
+    border-color: #8b6914 !important;
+    color: #fdfcf8 !important;
+}
+
+.btn-primary:hover {
+    background-color: #a67c52 !important;
+    border-color: #a67c52 !important;
+}
+
+/* Blockquotes and callouts - distinct but harmonious */
+.admonition {
+    border-left: 4px solid #a67c52 !important;
+    background-color: #f0ebe0 !important;
+    color: #2d2416 !important;
+}
+
+blockquote {
+    border-left: 4px solid #d4c4a8 !important;
+    background-color: #f0ebe0 !important;
+    color: #5d4e3a !important;
+    padding: 12px 16px !important;
+}
+
+/* Logo text styling - in navbar */
+.navbar-brand {
+    color: #2d2416 !important;
+    font-weight: 600 !important;
+}
+
+/* Subtle borders and dividers */
+hr {
+    border-color: #d4c4a8 !important;
+}
+
+/* Syntax highlighting improvements */
+.highlight pre {
+    background-color: #f0ebe0 !important;
+    color: #2d2416 !important;
+}
+
+/* Make sure links in content are clearly visible */
+.bd-article a {
+    color: #8b6914 !important;
+    text-decoration: underline;
+}
+
+.bd-article a:hover {
+    color: #a67c52 !important;
+}

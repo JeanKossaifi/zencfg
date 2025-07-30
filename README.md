@@ -1,5 +1,7 @@
 # ZenCFG
 
+![ZenCFG Logo](docs/_static/ZenCFG_image.png)
+
 A Zen way to configure your Python packages while keeping your sanity.
 
 ## ⚡ Quick Start

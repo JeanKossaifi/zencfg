@@ -1,7 +1,11 @@
-Welcome to ZenCFG's documentation!
-==================================
-
+ZenCFG: A Zen way to configure your code
+========================================
 A Zen way to configure your Python packages while keeping your sanity.
+
+.. image:: _static/ZenCFG_image.png
+   :align: center
+   :alt: ZenCFG Logo
+
 
 Why ZenCFG?
 -----------
