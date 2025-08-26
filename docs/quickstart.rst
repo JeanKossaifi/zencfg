@@ -131,6 +131,11 @@ For larger projects, you can organize configurations in separate files:
 
 The main difference: `load_config_from_file` returns the class for reuse, while `make_config_from_cli` directly creates an instance.
 
+Auto-Discovery (Advanced)
+---------------------------
+
+For plugin architectures and modular applications, ZenCFG can automatically discover and wire up config instances using `AutoConfig()`. See the :doc:`advanced` guide for complete details.
+
 Next Steps
 ----------
 

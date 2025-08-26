@@ -32,6 +32,7 @@ html_show_sourcelink = False
 
 html_theme_options = {
     'show_prev_next': True,
+    'navbar_end': ['navbar-icon-links'],  # Remove theme-switcher from navbar
     'logo': {
         'image_light': '_static/ZenCFG-logo.png',
         'image_dark': '_static/ZenCFG-logo.png',  # You can use a different logo for dark mode
@@ -44,6 +45,11 @@ html_theme_options = {
             'icon': 'fab fa-github-square',
         },
     ],
+}
+
+# Set default theme mode to light and disable theme switching
+html_context = {
+    'default_mode': 'light'
 }
 
 html_sidebars = {

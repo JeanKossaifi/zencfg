@@ -160,6 +160,63 @@ Convert configurations to dictionaries for logging or serialization:
    import json
    print(json.dumps(config_dict, indent=2))
 
+Object Instantiation
+--------------------
+
+ZenCFG configurations can automatically instantiate objects using the ``_target_class`` attribute and the ``instantiate()`` method. This is perfect for creating PyTorch models, optimizers, or any Python objects from configuration:
+
+.. code-block:: python
+
+   from zencfg import ConfigBase
+   
+   # Define configs that can create actual objects
+   class ModelConfig(ConfigBase):
+       _target_class = "torch.nn.Linear"  # String import path
+       in_features: int = 784
+       out_features: int = 10
+       bias: bool = True
+   
+   class OptimizerConfig(ConfigBase):
+       _target_class = "torch.optim.Adam"
+       lr: float = 1e-3
+       weight_decay: float = 1e-5
+   
+   class ExperimentConfig(ConfigBase):
+       model: ModelConfig = ModelConfig()
+       optimizer: OptimizerConfig = OptimizerConfig()
+       
+   # Create configuration
+   config = ExperimentConfig()
+   
+   # Instantiate actual objects
+   model = config.model.instantiate()           # Creates torch.nn.Linear(784, 10, bias=True)
+   
+   # Pass additional arguments to constructors (e.g., model parameters to optimizers)
+   optimizer = config.optimizer.instantiate(model.parameters())
+   
+   # Or override config values at instantiation time
+   optimizer = config.optimizer.instantiate(model.parameters(), lr=0.01)
+
+You can also define custom instantiation logic by overriding the ``instantiate()`` method:
+
+.. code-block:: python
+
+   class CustomModelConfig(ConfigBase):
+       layers: int = 3
+       dropout: float = 0.1
+       
+       def instantiate(self):
+           import torch.nn as nn
+           layers = []
+           for _ in range(self.layers):
+               layers.extend([nn.Linear(128, 128), nn.ReLU(), nn.Dropout(self.dropout)])
+           return nn.Sequential(*layers)
+   
+   config = CustomModelConfig(layers=5, dropout=0.2) 
+   model = config.instantiate()  # Creates a 5-layer network
+
+This pattern enables **configuration-driven object creation** where you can switch between different implementations by changing configuration files or command-line arguments.
+
 Other considerations
 --------------------
 
@@ -198,4 +255,5 @@ Other considerations
       class BERT(ModelConfig): ...
       class ImageDataset(DataConfig): ...
 
-Check out the :doc:`advanced` guide for more advanced features.
+
+Check out the :doc:`advanced` guide for more advanced features like auto-discovery patterns.

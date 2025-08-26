@@ -42,6 +42,10 @@ def parse_value_to_type(value: Any, field_type: Type, strict: bool = True, path:
     TypeError
         If value cannot be converted to the expected type and strict=True
     """
+    # Handle AutoConfig sentinel - pass through without validation
+    if isinstance(value, AutoConfig):
+        return value
+        
     origin = get_origin(field_type)
     args = get_args(field_type)
 
@@ -95,6 +99,24 @@ def gather_defaults(cls) -> dict:
     return defaults
 
 
+class AutoConfig:
+    """Sentinel indicating a field should be automatically configured with the latest instance of its type."""
+    
+    def __init__(self, default_class=None, required: bool = False):
+        """
+        Parameters
+        ----------
+        default_class : type, optional
+            Class to instantiate if no instance of the field type exists.
+            If None, uses the field type itself.
+        required : bool, default=False
+            If True, raises error if no instance exists and no default_class provided.
+            If False, creates a default instance when needed.
+        """
+        self.default_class = default_class
+        self.required = required
+
+
 class ConfigBase:
     """Base class for all config objects, instanciates a new ConfigBase object.
         
@@ -108,9 +130,23 @@ class ConfigBase:
     In other words, for each main configuration category, create one subclass.
     Each config instance in this category should inherit from that subclass.        
         
+    **Auto-discovery**
+    ConfigBase automatically tracks the latest instance of each config type.
+    Use `AutoConfig()` as a default value to automatically populate fields with the latest instance.
+        
     Notes
     -----
-    Note that by default, attributes are **not** inherited since they
+    **AutoConfig best practices**: For reliable auto-discovery, define config classes in 
+    importable modules (not in main scripts). Content modules creating instances must be 
+    imported to execute their code and register instances.
+    
+    **Recommended structure**:
+        - Define classes in: ``models/config.py`` or similar importable modules
+        - Create instances in: ``content/*.py`` or configuration modules  
+        - Import content modules in: ``main.py`` or package ``__init__.py``
+        - Avoid defining config classes directly in main scripts (causes class identity issues)
+    
+    **Attribute inheritance**: Note that by default, attributes are **not** inherited since they
     are class-level attributes, not actual constructor parameters.
     By default, Python does not automatically copy class attributes into 
     instance attributes at ``__init__`` time. 
@@ -131,6 +167,7 @@ class ConfigBase:
         * Then override with any passed-in kwargs, including name.
     """
     _registry = {} # Dict[str, Type["ConfigBase"]] = {}
+    _latest_instances = {} # Dict[Type, "ConfigBase"] = {} - Auto-discovery registry
     _config_name: str = "configbase"
     _target_class: Optional[Union[str, Callable]] = None  # Optional target for instantiation
 
@@ -153,6 +190,12 @@ class ConfigBase:
             return None
             
         target = self._target_class
+        
+        # Check if it's a bound method and extract the underlying function
+        # This happens when a function is assigned as a class attribute
+        if hasattr(target, '__self__') and hasattr(target, '__func__'):
+            # It's a bound method, get the underlying function
+            target = target.__func__
         
         # If it's already a callable, return it
         if callable(target):
@@ -198,15 +241,25 @@ class ConfigBase:
         
         return params
 
-    def instantiate(self) -> Any:
-        """Instantiate the target class with config parameters.
+    def instantiate(self, *args, **kwargs) -> Any:
+        """Instantiate the target class with config parameters and optional additional arguments.
         
         This method creates an instance of the class specified in _target_class
-        using the configuration parameters as constructor arguments.
+        using the configuration parameters as constructor arguments, along with any
+        additional positional or keyword arguments provided.
         
         Only the current config is instantiated - nested ConfigBase objects
         are passed as-is (not recursively instantiated).
         
+        Parameters
+        ----------
+        *args : tuple
+            Additional positional arguments to pass to the target class constructor.
+            These are passed before the config parameters.
+        **kwargs : dict
+            Additional keyword arguments to pass to the target class constructor.
+            These override any config parameters with the same name.
+            
         Returns
         -------
         Any
@@ -234,16 +287,35 @@ class ConfigBase:
             >>> config = LinearConfig()
             >>> model = config.instantiate()  # Creates torch.nn.Linear(in_features=784, out_features=10)
         
+        With additional arguments (e.g., for optimizers):
+
+        .. code-block:: python
+
+            >>> class OptimizerConfig(ConfigBase):
+            ...     _target_class = "torch.optim.Adam"
+            ...     lr: float = 0.001
+            ...     betas: tuple = (0.9, 0.999)
+            >>> config = OptimizerConfig()
+            >>> optimizer = config.instantiate(model.parameters())  # Pass model.parameters() as first arg
+        
+        Override config parameters with kwargs:
+
+        .. code-block:: python
+
+            >>> config = LinearConfig(out_features=10)
+            >>> model = config.instantiate(out_features=20)  # kwargs override config values
+            >>> # Creates torch.nn.Linear(in_features=784, out_features=20)
+        
         Alternatively, you can customize the instantiate method:
 
         .. code-block:: python
 
             >>> class CustomConfig(ConfigBase):
             ...     param1: int = 42
-            ...     def instantiate(self):
-            ...         return MyCustomClass(self.param1)
+            ...     def instantiate(self, *args, **kwargs):
+            ...         return MyCustomClass(self.param1, *args, **kwargs)
             >>> config = CustomConfig()
-            >>> obj = config.instantiate()
+            >>> obj = config.instantiate(additional_param="test")
 
         """
         target_class = self._resolve_target_class()
@@ -256,9 +328,12 @@ class ConfigBase:
         # Extract parameters from config
         params = self._extract_config_params()
         
+        # Merge with kwargs (kwargs override config params)
+        merged_params = {**params, **kwargs}
+        
         # Try to instantiate
         try:
-            return target_class(**params)
+            return target_class(*args, **merged_params)
         except TypeError as e:
             # Get the signature for better error messages
             try:
@@ -308,6 +383,55 @@ class ConfigBase:
         # Then override with values provided by the user
         for k, v in kwargs.items():
             setattr(self, k, v)
+        
+        # Auto-register this instance as the latest for its type
+        ConfigBase._latest_instances[self.__class__] = self
+        
+        # Resolve any AutoConfig fields
+        self._resolve_auto_fields()
+
+    def _resolve_auto_fields(self):
+        """Replace AutoConfig sentinels with the latest instances."""
+        from typing import get_type_hints
+        type_hints = get_type_hints(self.__class__)
+        
+        for field_name, field_type in type_hints.items():
+            current_value = getattr(self, field_name, None)
+            
+            if isinstance(current_value, AutoConfig):
+                if current_value.default_class:
+                    # When default_class is specified, only use latest instance if it matches
+                    latest_instance = self._latest_instances.get(current_value.default_class)
+                    if latest_instance:
+                        setattr(self, field_name, latest_instance)
+                    else:
+                        # Create instance of specified default class
+                        default_instance = current_value.default_class()
+                        setattr(self, field_name, default_instance)
+                else:
+                    # No default_class specified, use latest of field_type
+                    latest_instance = self._latest_instances.get(field_type)
+                    
+                    if latest_instance:
+                        setattr(self, field_name, latest_instance)
+                    elif not current_value.required:
+                        # Create instance of the field type itself
+                        try:
+                            default_instance = field_type()
+                            setattr(self, field_name, default_instance)
+                        except Exception as e:
+                            if current_value.required:
+                                raise ValueError(
+                                    f"Could not create default instance of {field_type.__name__} "
+                                    f"for field '{field_name}': {e}"
+                                )
+                            # If not required and can't create default, leave as AutoConfig
+                    else:
+                        raise ValueError(
+                            f"No instance of {field_type.__name__} found for AutoConfig field '{field_name}'. "
+                            f"Ensure the module creating {field_type.__name__} instances is imported. "
+                            f"If classes are defined in your main script, consider moving them to a separate module."
+                        )
 
     def __init_subclass__(cls, **kwargs):
         """Automatically register subclasses by lowercase class name."""

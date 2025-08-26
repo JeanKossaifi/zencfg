@@ -28,6 +28,9 @@ Switch between model architectures, optimizers, and their specific parameters in
 **4. Zero Boilerplate**
 Pure Python classes with no frameworks, no special syntax, and no additional dependencies. If you know Python, you know ZenCFG.
 
+**5. Automatic Discovery** *(Optional)*
+For modular applications, ZenCFG configuration can automatically discover user instances and used them without explicit configuration - perfect for plugin architectures.
+
 Installation
 ------------
 

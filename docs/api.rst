@@ -7,9 +7,19 @@ Core Classes
 ConfigBase
 ~~~~~~~~~~
 
-The main configuration class that provides inheritance, type validation, and serialization capabilities.
+The main configuration class that provides inheritance, type validation, serialization, and auto-discovery capabilities.
 
 .. autoclass:: zencfg.ConfigBase
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+AutoConfig
+~~~~~~~~~~
+
+A sentinel class for automatic instance discovery. When used as a default value, the field will be automatically populated with the latest instance of its type.
+
+.. autoclass:: zencfg.AutoConfig
    :members:
    :undoc-members:
    :show-inheritance:
@@ -63,7 +73,7 @@ Create a configuration instance from a nested dictionary structure.
 .. autofunction:: zencfg.make_config_from_nested_dict
 
 load_config_from_file
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 Load a configuration class or instance from a Python file.
 
