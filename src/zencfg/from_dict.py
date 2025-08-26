@@ -135,7 +135,7 @@ def make_config_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], s
     class_fields = set()
     
     # Internal attributes that shouldn't be configurable
-    INTERNAL_ATTRS = {'_registry'}
+    INTERNAL_ATTRS = {'_registry', '_target_class', '_latest_instances'}
     
     for attr_name in dir(actual_cls):
         # Skip internal attributes and callable attributes
@@ -160,6 +160,9 @@ def make_config_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], s
     # 4) Build init_values
     init_values = {}
     for field_name, field_type in type_hints.items():
+        # Skip internal attributes that shouldn't be configurable
+        if field_name in INTERNAL_ATTRS:
+            continue
         full_path = join_path(path, field_name)
         default_val = defaults.get(field_name, MISSING)
 

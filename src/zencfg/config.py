@@ -231,7 +231,7 @@ class ConfigBase:
         params = {}
         
         # Only exclude the essential ZenCFG internals
-        zencfg_internals = {'_registry', '_config_name', '_target_class'}
+        zencfg_internals = {'_registry', '_config_name', '_target_class', '_latest_instances'}
         
         for name, value in vars(self).items():
             if name in zencfg_internals:
