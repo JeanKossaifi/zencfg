@@ -16,9 +16,9 @@ def make_config(source: Union[Type[ConfigBase], ConfigBase, str, Path], name: Op
         Source to create config from:
         - ConfigBase class: instantiate with overrides
         - ConfigBase instance: apply overrides to copy
-        - str/Path: file path to load config from
+        - str/Path: file path to load config from (auto-detects class if name not provided)
     name : str, optional
-        Required when source is a file path. Name of class/instance to load.
+        Name of class/instance to load from file. If None, auto-detects ConfigBase subclass.
     **overrides
         Keyword arguments to override in the config
         
@@ -32,9 +32,9 @@ def make_config(source: Union[Type[ConfigBase], ConfigBase, str, Path], name: Op
     >>> # From class
     >>> config = make_config(TrainingConfig, batch_size=32)
     >>> 
-    >>> # From file
-    >>> config = make_config("configs.py", "TrainingConfig", epochs=100)
-    >>> config = make_config(Path("configs.py"), "TrainingConfig", epochs=100)
+    >>> # From file - name is now optional!
+    >>> config = make_config("configs/experiment.py", epochs=100)  # Auto-detects
+    >>> config = make_config("configs.py", "TrainingConfig", epochs=100)  # Explicit
     >>>
     >>> # From instance
     >>> base = TrainingConfig()
@@ -53,11 +53,9 @@ def make_config(source: Union[Type[ConfigBase], ConfigBase, str, Path], name: Op
         return make_config_from_flat_dict(source.__class__, current_dict)
         
     elif isinstance(source, (str, Path)):
-        # It's a file path - load and handle
-        if name is None:
-            raise ValueError("name parameter is required when loading from file")
+        # It's a file path - load with optional name
         from .from_file import load_config_from_file
-        loaded_item = load_config_from_file(str(source), name)
+        loaded_item = load_config_from_file(str(source), config_name=name)  # name is optional now
         return make_config(loaded_item, **overrides)  # Recursive call
         
     else:
@@ -72,7 +70,7 @@ def make_config_from_cli(source: Union[Type[ConfigBase], ConfigBase, str, Path],
     source : Union[Type[ConfigBase], ConfigBase, str, Path]
         Source to create config from (class, instance, or file path)
     name : str, optional
-        Required when source is a file path. Name of class/instance to load.
+        Name of class/instance to load from file. If None, auto-detects ConfigBase subclass.
     strict : bool, default=False
         If True, raises errors on type conversion failures
         
@@ -86,9 +84,9 @@ def make_config_from_cli(source: Union[Type[ConfigBase], ConfigBase, str, Path],
     >>> # From class
     >>> config = make_config_from_cli(TrainingConfig)
     >>>
-    >>> # From file  
-    >>> config = make_config_from_cli("configs.py", "TrainingConfig")
-    >>> config = make_config_from_cli(Path("configs.py"), "TrainingConfig")
+    >>> # From file - name is now optional!
+    >>> config = make_config_from_cli("configs/experiment.py")  # Auto-detects
+    >>> config = make_config_from_cli("configs.py", "TrainingConfig")  # Explicit
     """
     args = sys.argv[1:]  # Skip the script name
 
@@ -112,11 +110,9 @@ def make_config_from_cli(source: Union[Type[ConfigBase], ConfigBase, str, Path],
         return make_config_from_flat_dict(source.__class__, current_dict, strict=strict)
         
     elif isinstance(source, (str, Path)):
-        # It's a file path - load and handle
-        if name is None:
-            raise ValueError("name parameter is required when loading from file")
+        # It's a file path - load with optional name (auto-detects if not provided)
         from .from_file import load_config_from_file
-        loaded_item = load_config_from_file(str(source), name)
+        loaded_item = load_config_from_file(str(source), config_name=name)
         return make_config_from_cli(loaded_item, strict=strict)  # Recursive call
         
     else:
