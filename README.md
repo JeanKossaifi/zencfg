@@ -200,6 +200,19 @@ from YOUR_CONFIG_FILE import Config
 config = make_config_from_cli(Config, strict=True)
 ```
 
+Or load configs from files:
+```python
+from zencfg import load_config_from_file, make_config_from_cli
+
+# Load config class from file
+Config = load_config_from_file(
+    config_path="configs/",
+    config_file="experiment.py", 
+    config_name="ExperimentConfig"
+)
+config = make_config_from_cli(Config)
+```
+
 You can then call your script via the command line. 
 In that case, we simply use `.` to indicate nesting.
 

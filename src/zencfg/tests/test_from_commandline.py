@@ -75,10 +75,33 @@ test_instance = TestConfig(value="file_instance", number=456)
         os.unlink(temp_file)
 
 
-def test_make_config_from_file_missing_name():
-    """Test that make_config raises error when name is missing for file."""
-    with pytest.raises(ValueError, match="name parameter is required"):
-        make_config("some_file.py")
+def test_make_config_from_file_requires_name():
+    """Test that make_config requires a name when loading from a file."""
+    import tempfile
+    
+    # Create a temporary config file
+    temp_file = tempfile.mktemp(suffix='.py')
+    try:
+        with open(temp_file, 'w') as f:
+            f.write('''
+from zencfg import ConfigBase
+
+class TestConfig(ConfigBase):
+    value: str = "test"
+    number: int = 42
+''')
+        
+        # Should raise error when name is not provided
+        with pytest.raises(ValueError, match="name parameter is required"):
+            make_config(temp_file)  # No name provided
+        
+        # Works when name is provided explicitly
+        config = make_config(temp_file, "TestConfig")
+        assert config.value == "test"
+        assert config.number == 42
+        
+    finally:
+        os.unlink(temp_file)
 
 
 def test_make_config_invalid_source():
@@ -139,10 +162,36 @@ class TestConfig(ConfigBase):
         os.unlink(temp_file)
 
 
-def test_make_config_from_cli_missing_name():
-    """Test that make_config_from_cli raises error when name is missing for file."""
-    with pytest.raises(ValueError, match="name parameter is required"):
-        make_config_from_cli("some_file.py")
+def test_make_config_from_cli_requires_name(monkeypatch):
+    """Test that make_config_from_cli requires a name when loading from a file."""
+    import tempfile
+    
+    # Set up CLI args
+    monkeypatch.setattr("sys.argv", ['test', '--value', 'modified', '--number', '100'])
+    
+    # Create a temporary config file
+    temp_file = tempfile.mktemp(suffix='.py')
+    try:
+        with open(temp_file, 'w') as f:
+            f.write('''
+from zencfg import ConfigBase
+
+class TestConfig(ConfigBase):
+    value: str = "test"
+    number: int = 42
+''')
+        
+        # Should raise error when name is not provided
+        with pytest.raises(ValueError, match="name parameter is required"):
+            make_config_from_cli(temp_file)  # No name provided
+        
+        # Works when name is provided
+        config = make_config_from_cli(temp_file, "TestConfig")
+        assert config.value == "modified"  # CLI override
+        assert config.number == 100  # CLI override
+        
+    finally:
+        os.unlink(temp_file)
 
 
 def test_make_config_from_cli_invalid_args(monkeypatch):

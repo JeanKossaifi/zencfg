@@ -111,25 +111,34 @@ Loading from Files
 
 For larger projects, you can organize configurations in separate files:
 
-
 .. code-block:: python
 
    from zencfg import make_config_from_cli, load_config_from_file
-   from pathlib import Path
 
-   path_to_config = Path("configs/experiment.py")
-   # Option 1: Load class and use make_config_from_cli, by passing the path to the file and the class name
-   ExperimentConfig = load_config_from_file(path_to_config, "ExperimentConfig")
-   # Optionally, you can override specific parameters from the command line:
-   config = make_config_from_cli(ExperimentConfig)
-
-   # Option 2: Direct loading with make_config_from_cli
+   # Load a config class from a file
+   Config = load_config_from_file(
+       config_path="configs/",           # Root directory of configs
+       config_file="experiment.py",      # File relative to config_path
+       config_name="ExperimentConfig"    # Class name to load
+   )
+   
+   # Create instance with CLI overrides
+   config = make_config_from_cli(Config)
+   
+   # Or directly from file path
    config = make_config_from_cli("configs/experiment.py", "ExperimentConfig")
 
-   # Both approaches support command-line overrides
-   # python main.py --model.layers 24 --batch_size 64
+The `load_config_from_file` API supports nested directories and relative imports:
 
-The main difference: `load_config_from_file` returns the class for reuse, while `make_config_from_cli` directly creates an instance.
+.. code-block:: python
+
+   # Nested configs with relative imports work
+   Config = load_config_from_file(
+       config_path="configs/",
+       config_file="models/transformer.py",  # Nested path
+       config_name="TransformerConfig"
+   )
+   # This config can use: from ..base import BaseConfig
 
 Auto-Discovery (Advanced)
 ---------------------------

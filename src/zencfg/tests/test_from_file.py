@@ -9,7 +9,7 @@ from ..from_file import load_config_from_file
 
 
 def test_load_config_from_file():
-    """Test loading config from file."""
+    """Test basic config loading from file."""
     # Create a temporary config file
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
         f.write("""
@@ -26,15 +26,18 @@ class TestExperimentConfig(ConfigBase):
         temp_file = f.name
     
     try:
-        # Test simple loading
-        ExperimentConfig = load_config_from_file(temp_file, 'TestExperimentConfig')
+        # Test loading with new API
+        temp_path = Path(temp_file)
+        ExperimentConfig = load_config_from_file(
+            temp_path.parent, 
+            temp_path.name, 
+            'TestExperimentConfig'
+        )
         config = ExperimentConfig()
         
         assert config.batch_size == 32
         assert config.model.layers == 12
         assert config.model.n_heads == 8
-        
-        # Test that it's a proper ConfigBase subclass
         assert issubclass(ExperimentConfig, ConfigBase)
         
     finally:
@@ -43,7 +46,6 @@ class TestExperimentConfig(ConfigBase):
 
 def test_load_config_from_file_invalid_class():
     """Test that loading non-ConfigBase classes raises an error."""
-    # Create a temporary file with a non-ConfigBase class
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
         f.write("""
 class NotAConfig:
@@ -52,15 +54,15 @@ class NotAConfig:
         temp_file = f.name
     
     try:
-        with pytest.raises(TypeError, match="is not a ConfigBase subclass"):
-            load_config_from_file(temp_file, 'NotAConfig')
+        with pytest.raises(TypeError, match="must be a ConfigBase class or instance"):
+            temp_path = Path(temp_file)
+            load_config_from_file(temp_path.parent, temp_path.name, 'NotAConfig')
     finally:
         os.unlink(temp_file)
 
 
 def test_load_config_from_file_missing_class():
     """Test that loading non-existent class raises an error."""
-    # Create a temporary file
     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
         f.write("""
 from zencfg import ConfigBase
@@ -72,6 +74,7 @@ class TestConfig(ConfigBase):
     
     try:
         with pytest.raises(AttributeError):
-            load_config_from_file(temp_file, 'NonExistentConfig')
+            temp_path = Path(temp_file)
+            load_config_from_file(temp_path.parent, temp_path.name, 'NonExistentConfig')
     finally:
-        os.unlink(temp_file) 
+        os.unlink(temp_file)
