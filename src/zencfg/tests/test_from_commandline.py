@@ -154,7 +154,7 @@ class TestConfig(ConfigBase):
         temp_file = f.name
     
     try:
-        config = make_config_from_cli(temp_file, "TestConfig")
+        config = make_config_from_cli(temp_file, config_name="TestConfig")
         assert config.value == "cli_file_override"
         assert config.number == 123
         
@@ -182,11 +182,11 @@ class TestConfig(ConfigBase):
 ''')
         
         # Should raise error when name is not provided
-        with pytest.raises(ValueError, match="name parameter is required"):
+        with pytest.raises(ValueError, match="config_name is required"):
             make_config_from_cli(temp_file)  # No name provided
         
         # Works when name is provided
-        config = make_config_from_cli(temp_file, "TestConfig")
+        config = make_config_from_cli(temp_file, config_name="TestConfig")
         assert config.value == "modified"  # CLI override
         assert config.number == 100  # CLI override
         
