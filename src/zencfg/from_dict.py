@@ -1,30 +1,15 @@
-import warnings
 import logging
-import ast
 from typing import Any, Dict, get_type_hints, Union, get_origin, get_args
-from pydantic import ValidationError, TypeAdapter, ConfigDict
 
-from .config import ConfigBase, parse_value_to_type
+from .config import ConfigBase, parse_value_to_type, is_configbase_type
 
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 # -------------------------------------------
 # Utilities for detecting configbase in union
 # -------------------------------------------
 MISSING = object()  # sentinel
-
-def is_configbase_type(tp: Any) -> bool:
-    """
-    Returns True if type 'tp' is a subclass of ConfigBase OR a Union that includes a ConfigBase subclass.
-    """
-    origin = get_origin(tp)
-    if origin is Union:
-        return any(
-            isinstance(arg, type) and issubclass(arg, ConfigBase)
-            for arg in get_args(tp)
-        )
-    else:
-        return (isinstance(tp, type) and issubclass(tp, ConfigBase))
 
 def extract_configbase_member(tp: Any) -> Any:
     """

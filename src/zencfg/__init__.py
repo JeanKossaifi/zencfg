@@ -5,3 +5,17 @@ from .from_file import load_config_from_file
 from .deprecated import cfg_from_commandline
 
 __version__ = "0.6.0"
+
+__all__ = [
+    # Core classes
+    "ConfigBase",
+    "AutoConfig",
+    # Config creation
+    "make_config",
+    "make_config_from_cli",
+    "make_config_from_flat_dict", 
+    "make_config_from_nested_dict",
+    "load_config_from_file",
+    # Deprecated (kept for backward compatibility)
+    "cfg_from_commandline",
+]

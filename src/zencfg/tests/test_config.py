@@ -244,3 +244,126 @@ def test_instantiate_mixed_args_kwargs():
     assert result["optional"] == "optional"
     assert result["config"] == 100  # From config
     assert result["extra"] == 200  # From kwargs
+
+
+def test_instantiate_recursive_nested():
+    """Test that nested ConfigBase objects are recursively instantiated by default."""
+    
+    # Inner class that will be instantiated
+    class InnerClass:
+        def __init__(self, value, name="default"):
+            self.value = value
+            self.name = name
+    
+    # Outer class that receives the instantiated inner object
+    class OuterClass:
+        def __init__(self, data, inner):
+            self.data = data
+            self.inner = inner
+    
+    # Config classes
+    class InnerConfig(ConfigBase):
+        _target_class = InnerClass
+        value: int = 42
+        name: str = "inner"
+    
+    class OuterConfig(ConfigBase):
+        _target_class = OuterClass
+        data: str = "test"
+        inner: InnerConfig = InnerConfig()
+    
+    # Test recursive instantiation (default)
+    config = OuterConfig()
+    result = config.instantiate()
+    
+    # inner should be an InnerClass instance, not InnerConfig
+    assert isinstance(result.inner, InnerClass)
+    assert result.inner.value == 42
+    assert result.inner.name == "inner"
+    assert result.data == "test"
+
+
+def test_instantiate_recursive_false():
+    """Test that recursive=False passes nested configs as-is."""
+    
+    class InnerClass:
+        def __init__(self, value):
+            self.value = value
+    
+    class OuterClass:
+        def __init__(self, data, inner):
+            self.data = data
+            self.inner = inner
+    
+    class InnerConfig(ConfigBase):
+        _target_class = InnerClass
+        value: int = 42
+    
+    class OuterConfig(ConfigBase):
+        _target_class = OuterClass
+        data: str = "test"
+        inner: InnerConfig = InnerConfig()
+    
+    # Test with recursive=False
+    config = OuterConfig()
+    result = config.instantiate(recursive=False)
+    
+    # inner should still be an InnerConfig, not InnerClass
+    assert isinstance(result.inner, InnerConfig)
+    assert result.inner.value == 42
+
+
+def test_instantiate_recursive_list_of_configs():
+    """Test that lists of ConfigBase objects are recursively instantiated."""
+    
+    class ItemClass:
+        def __init__(self, name):
+            self.name = name
+    
+    class ContainerClass:
+        def __init__(self, items):
+            self.items = items
+    
+    class ItemConfig(ConfigBase):
+        _target_class = ItemClass
+        name: str = "item"
+    
+    class ContainerConfig(ConfigBase):
+        _target_class = ContainerClass
+        items: List[ItemConfig] = [ItemConfig(name="a"), ItemConfig(name="b")]
+    
+    config = ContainerConfig()
+    result = config.instantiate()
+    
+    # All items should be ItemClass instances
+    assert len(result.items) == 2
+    assert all(isinstance(item, ItemClass) for item in result.items)
+    assert result.items[0].name == "a"
+    assert result.items[1].name == "b"
+
+
+def test_instantiate_nested_without_target_class():
+    """Test that nested configs without _target_class are passed as-is."""
+    
+    class OuterClass:
+        def __init__(self, data, settings):
+            self.data = data
+            self.settings = settings
+    
+    # This config has no _target_class - it's just a data container
+    class SettingsConfig(ConfigBase):
+        debug: bool = True
+        verbose: bool = False
+    
+    class OuterConfig(ConfigBase):
+        _target_class = OuterClass
+        data: str = "test"
+        settings: SettingsConfig = SettingsConfig()
+    
+    config = OuterConfig()
+    result = config.instantiate()
+    
+    # settings should still be a SettingsConfig (no _target_class to instantiate)
+    assert isinstance(result.settings, SettingsConfig)
+    assert result.settings.debug == True
+    assert result.settings.verbose == False

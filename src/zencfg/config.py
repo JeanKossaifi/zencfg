@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type, Union, List, get_origin, get_args, Optional, Callable
+from typing import Any, Dict, Type, Union, List, get_origin, get_args, get_type_hints, Optional, Callable
 import importlib
 import inspect
 from pydantic import TypeAdapter, ValidationError
@@ -166,8 +166,12 @@ class ConfigBase:
         * Assign defaults to self.
         * Then override with any passed-in kwargs, including name.
     """
-    _registry = {} # Dict[str, Type["ConfigBase"]] = {}
-    _latest_instances = {} # Dict[Type, "ConfigBase"] = {} - Auto-discovery registry
+    # NOTE: _registry and _latest_instances intentionally use comment-style type hints
+    # rather than annotations. If they had proper annotations, they would appear in
+    # get_type_hints() and could be incorrectly treated as configurable fields by
+    # __init__ or _resolve_auto_fields().
+    _registry = {}  # type: Dict[str, Type["ConfigBase"]]
+    _latest_instances = {}  # type: Dict[Type["ConfigBase"], "ConfigBase"]
     _config_name: str = "configbase"
     _target_class: Optional[Union[str, Callable]] = None  # Optional target for instantiation
 
@@ -241,21 +245,46 @@ class ConfigBase:
         
         return params
 
-    def instantiate(self, *args, **kwargs) -> Any:
+    def _recursive_instantiate(self, value: Any) -> Any:
+        """Recursively instantiate ConfigBase objects that have _target_class defined.
+        
+        Parameters
+        ----------
+        value : Any
+            The value to process
+            
+        Returns
+        -------
+        Any
+            The instantiated object if value is a ConfigBase with _target_class,
+            otherwise the original value
+        """
+        if isinstance(value, ConfigBase):
+            if value._target_class is not None:
+                return value.instantiate(recursive=True)
+            return value
+        if isinstance(value, list):
+            return [self._recursive_instantiate(v) for v in value]
+        return value
+
+    def instantiate(self, *args, recursive: bool = True, **kwargs) -> Any:
         """Instantiate the target class with config parameters and optional additional arguments.
         
         This method creates an instance of the class specified in _target_class
         using the configuration parameters as constructor arguments, along with any
         additional positional or keyword arguments provided.
         
-        Only the current config is instantiated - nested ConfigBase objects
-        are passed as-is (not recursively instantiated).
+        By default, nested ConfigBase objects with _target_class defined are
+        recursively instantiated. Set recursive=False to pass them as-is.
         
         Parameters
         ----------
         *args : tuple
             Additional positional arguments to pass to the target class constructor.
             These are passed before the config parameters.
+        recursive : bool, default=True
+            If True, recursively instantiate nested ConfigBase objects that have
+            _target_class defined. If False, pass nested configs as-is.
         **kwargs : dict
             Additional keyword arguments to pass to the target class constructor.
             These override any config parameters with the same name.
@@ -328,6 +357,10 @@ class ConfigBase:
         # Extract parameters from config
         params = self._extract_config_params()
         
+        # Recursively instantiate nested ConfigBase objects if requested
+        if recursive:
+            params = {k: self._recursive_instantiate(v) for k, v in params.items()}
+        
         # Merge with kwargs (kwargs override config params)
         merged_params = {**params, **kwargs}
         
@@ -346,18 +379,33 @@ class ConfigBase:
                     f"Available parameters: {available_params}\n"
                     f"Provided parameters: {provided_params}\n"
                     f"Original error: {e}"
-                )
+                ) from e
+            except TypeError:
+                # Re-raise our enhanced TypeError
+                raise
             except Exception:
-                # If we can't get signature info, just re-raise original error
-                raise e
+                # If we can't get signature info, re-raise original error
+                raise e from None
 
     def __setattr__(self, name: str, value: Any) -> None:
-        """Override attribute setting to validate types."""
-        if name in self.__annotations__:
-            field_type = self.__annotations__[name]
-            # Include class name in the path for better error messages
-            path = f"{self.__class__.__name__}.{name}"
-            value = parse_value_to_type(value, field_type, strict=True, path=path)
+        """Override attribute setting to validate types.
+        
+        Uses get_type_hints() to include inherited annotations from parent classes.
+        Skips validation for private attributes (starting with '_').
+        """
+        # Skip validation for private/internal attributes
+        if not name.startswith('_'):
+            try:
+                type_hints = get_type_hints(type(self))
+            except Exception:
+                # If get_type_hints fails (e.g., forward reference issues), skip validation
+                type_hints = {}
+            
+            if name in type_hints:
+                field_type = type_hints[name]
+                # Include class name in the path for better error messages
+                path = f"{self.__class__.__name__}.{name}"
+                value = parse_value_to_type(value, field_type, strict=True, path=path)
         super().__setattr__(name, value)
 
     def __init__(self, **kwargs):
@@ -368,13 +416,6 @@ class ConfigBase:
         for name, field_type in self.__annotations__.items():
             if name not in all_defaults and name not in kwargs:
                 raise ValueError(f"Missing required field '{name}', of type '{field_type}'")
-            # # We could also instantiate ConfigBase subclasses here:
-            # if (
-            #     name not in all_defaults 
-            #     and isinstance(field_type, type)
-            #     and issubclass(field_type, ConfigBase)
-            # ):
-            #     all_defaults[name] = field_type()
 
         # First assign default values to all attributes
         for k, v in all_defaults.items():
