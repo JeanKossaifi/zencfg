@@ -1,6 +1,6 @@
 from zencfg.from_dict import parse_value_to_type
 from zencfg.config import ConfigBase
-from typing import List, Union, Optional
+from typing import Dict, List, Tuple, Union, Optional
 import pytest
 from pathlib import Path
 
@@ -71,3 +71,19 @@ def test_non_strict_conversion():
     # Test that strict=True still raises
     with pytest.raises(TypeError):
         parse_value_to_type("not_a_number", int, strict=True)
+
+
+def test_parse_generic_containers_with_configbase():
+    """Test that generic types containing ConfigBase don't crash Pydantic's TypeAdapter."""
+    class MyConfig(ConfigBase):
+        value: int = 1
+
+    cfg = MyConfig(value=42)
+
+    # Dict[str, ConfigBase] should pass through
+    result = parse_value_to_type({"a": cfg}, Dict[str, MyConfig], strict=True, path="test")
+    assert result["a"].value == 42
+
+    # Tuple[ConfigBase, ...] should pass through
+    result = parse_value_to_type((cfg,), Tuple[MyConfig, ...], strict=True, path="test")
+    assert result[0].value == 42

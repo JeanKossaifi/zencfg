@@ -18,6 +18,21 @@ def is_configbase_type(tp: Any) -> bool:
     else:
         return is_configbase(tp)
 
+
+def _contains_configbase(tp: Any) -> bool:
+    """Recursively check if a type or any of its arguments contains a ConfigBase subclass.
+    
+    Used to detect types like Dict[str, MyConfig] or Tuple[MyConfig, ...]
+    that Pydantic's TypeAdapter cannot handle.
+    """
+    if is_configbase_type(tp):
+        return True
+    args = get_args(tp)
+    if args:
+        return any(_contains_configbase(a) for a in args if a is not ...)
+    return False
+
+
 def parse_value_to_type(value: Any, field_type: Type, strict: bool = True, path: str = "") -> Any:
     """Parse a value to match its expected type.
     
@@ -62,6 +77,12 @@ def parse_value_to_type(value: Any, field_type: Type, strict: bool = True, path:
             return value
         if strict:
             raise TypeError(f"Value for field '{path}' must be an instance of {getattr(field_type, '__name__', str(field_type))}")
+        return value
+
+    # Handle generic types containing ConfigBase (e.g. Dict[str, Config], Tuple[Config, ...])
+    # Pydantic's TypeAdapter cannot generate schemas for ConfigBase classes,
+    # so we pass through any type that contains ConfigBase in its args.
+    if args and any(_contains_configbase(a) for a in args):
         return value
 
     adapter = TypeAdapter(field_type)
