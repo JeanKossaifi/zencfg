@@ -1,6 +1,7 @@
 from typing import Any, Dict, Type, Union, List, get_origin, get_args, get_type_hints, Optional, Callable
 import importlib
 import inspect
+import reprlib
 from pydantic import TypeAdapter, ValidationError
 
 from .bunch import Bunch
@@ -95,10 +96,10 @@ def parse_value_to_type(value: Any, field_type: Type, strict: bool = True, path:
         return adapter.validate_python(value)
     except ValidationError as e:
         if strict:
-            # Add value and type info to Pydantic's error message, with truncation
             raise TypeError(
-                f"Invalid value for field '{path}' (got {type(value).__name__} = {str(value)[:100]}):\n{str(e)}"
-            )
+                f"Type Error during validation, got invalid value for field '{path}'. "
+                f"Expected type {field_type}, but got {type(value).__name__}={reprlib.repr(value)}\n{e}"
+            ) from None
         return value
 
 
