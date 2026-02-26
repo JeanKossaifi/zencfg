@@ -1,4 +1,4 @@
-from .config import ConfigBase, AutoConfig
+from .config import ConfigBase
 from .from_commandline import make_config, make_config_from_cli
 from .from_dict import make_config_from_flat_dict, make_config_from_nested_dict
 from .from_file import load_config_from_file
@@ -9,7 +9,6 @@ __version__ = "0.6.0"
 __all__ = [
     # Core classes
     "ConfigBase",
-    "AutoConfig",
     # Config creation
     "make_config",
     "make_config_from_cli",

@@ -140,11 +140,6 @@ The `load_config_from_file` API supports nested directories and relative imports
    )
    # This config can use: from ..base import BaseConfig
 
-Auto-Discovery (Advanced)
----------------------------
-
-For plugin architectures and modular applications, ZenCFG can automatically discover and wire up config instances using `AutoConfig()`. See the :doc:`advanced` guide for complete details.
-
 Next Steps
 ----------
 

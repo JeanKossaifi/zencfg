@@ -7,19 +7,9 @@ Core Classes
 ConfigBase
 ~~~~~~~~~~
 
-The main configuration class that provides inheritance, type validation, serialization, and auto-discovery capabilities.
+The main configuration class that provides inheritance, type validation, serialization, and instantiation capabilities.
 
 .. autoclass:: zencfg.ConfigBase
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-AutoConfig
-~~~~~~~~~~
-
-A sentinel class for automatic instance discovery. When used as a default value, the field will be automatically populated with the latest instance of its type.
-
-.. autoclass:: zencfg.AutoConfig
    :members:
    :undoc-members:
    :show-inheritance:

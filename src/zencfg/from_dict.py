@@ -120,7 +120,7 @@ def make_config_from_nested_dict(config_cls: Any, nested_dict: Dict[str, Any], s
     class_fields = set()
     
     # Internal attributes that shouldn't be configurable
-    INTERNAL_ATTRS = {'_registry', '_target_class', '_latest_instances'}
+    INTERNAL_ATTRS = {'_registry', '_target_class'}
     
     for attr_name in dir(actual_cls):
         # Skip internal attributes and callable attributes
