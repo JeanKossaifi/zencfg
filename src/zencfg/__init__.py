@@ -4,7 +4,7 @@ from .from_dict import make_config_from_flat_dict, make_config_from_nested_dict
 from .from_file import load_config_from_file
 from .deprecated import cfg_from_commandline
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 __all__ = [
     # Core classes
