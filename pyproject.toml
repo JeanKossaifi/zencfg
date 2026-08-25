@@ -5,15 +5,39 @@ authors = [
     {name = "Jean Kossaifi"},
 ]
 dependencies = [
-    "pydantic"
+    "pydantic>=2",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 readme = "README.md"
+license = {text = "MIT"}
+keywords = ["configuration", "config", "deep-learning", "machine-learning", "cli"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 
 dynamic = ["version"]
-license = {text = "MIT"}
 
-# Required config for build system
+[project.urls]
+Homepage = "https://github.com/JeanKossaifi/zencfg"
+Documentation = "https://jeankossaifi.github.io/zencfg/"
+Repository = "https://github.com/JeanKossaifi/zencfg"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
+dev = [
+    "zencfg[test]",
+]
+
 [build-system]
 requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
@@ -21,12 +45,5 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.dynamic]
 version = {attr = "zencfg.__version__"}
 
-[project.optional-dependencies]
-test = [
-    "pytest",
-    "pytest-mock", 
-]
-dev = [
-    "pytest",
-    "pytest-mock", 
-]
+[tool.setuptools.package-data]
+zencfg = ["py.typed"]
