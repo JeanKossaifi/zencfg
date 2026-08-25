@@ -79,7 +79,7 @@ Deprecated Functions
 cfg_from_commandline
 ~~~~~~~~~~~~~~~~~~~~
 
-.. deprecated:: 1.0.0
+.. deprecated:: 0.7.0
    Use :func:`make_config_from_cli` instead.
 
 Parse command-line arguments and create a configuration instance.

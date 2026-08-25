@@ -44,7 +44,7 @@ Type Validation
    config = AdvancedConfig(
        layers="[12, 24, 48]",  # String to list conversion
        checkpoint_path="/path/to/checkpoint.pt",  # String to Path
-       hyperparams={"lr": "0.0001"}  # Partial dict update
+       hyperparams={"lr": 0.0001}  # Plain dict values replace the default
    )
 
 

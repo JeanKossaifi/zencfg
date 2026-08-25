@@ -99,8 +99,8 @@ For larger projects, organize configs in separate files:
 
 .. code-block:: python
 
-   from zencfg import make_config_from_cli
-   from configs.models import ModelConfig
+   from zencfg import ConfigBase, make_config_from_cli
+   from configs.models import ModelConfig, ResNet50
 
    class Config(ConfigBase):
        model: ModelConfig = ResNet50()

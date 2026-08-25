@@ -26,10 +26,7 @@ Override any nested parameter through intuitive command-line syntax without file
 Switch between model architectures, optimizers, and their specific parameters in a single command.
 
 **4. Zero Boilerplate**
-Pure Python classes with no frameworks, no special syntax, and no additional dependencies. If you know Python, you know ZenCFG.
-
-**5. Automatic Discovery** *(Optional)*
-For modular applications, ZenCFG configuration can automatically discover user instances and used them without explicit configuration - perfect for plugin architectures.
+Pure Python classes with no frameworks and no special syntax (validation is powered by pydantic under the hood). If you know Python, you know ZenCFG.
 
 Installation
 ------------

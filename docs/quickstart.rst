@@ -73,10 +73,8 @@ Use in Your Scripts
 -------------------
 
 
-Using your newly defined configurations is as simple as calling the make_config function. 
-
-``make_config_from_cli`` function.
-This will automatically parse the command line arguments and return a configuration instance.
+Using your newly defined configurations is as simple as calling ``make_config_from_cli``.
+This parses the command line arguments and returns a configuration instance.
 
 .. code-block:: python
 
@@ -126,7 +124,7 @@ For larger projects, you can organize configurations in separate files:
    config = make_config_from_cli(Config)
    
    # Or directly from file path
-   config = make_config_from_cli("configs/experiment.py", "ExperimentConfig")
+   config = make_config_from_cli("configs/experiment.py", config_name="ExperimentConfig")
 
 The `load_config_from_file` API supports nested directories and relative imports:
 

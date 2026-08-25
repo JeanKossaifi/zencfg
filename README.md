@@ -58,8 +58,11 @@ python train.py --model cnnconfig --model.channels "[32,64,128]" --model.kernel_
 # Try SGD with momentum
 python train.py --optimizer sgdconfig --optimizer.momentum 0.95 --batch_size 128
 
-# Mix and match everything
+# Mix and match everything (--key value and --key=value both work)
 python train.py --model transformerconfig --model.n_heads 16 --optimizer adamconfig --optimizer.weight_decay 0.001
+
+# See all available fields, with the subclasses you selected applied
+python train.py --model cnnconfig --help
 ```
 
 ## Why ZenCFG
@@ -82,7 +85,8 @@ class ModelConfig(ConfigBase):
 Catch configuration errors at startup with type safety and runtime validation, not hours into expensive training runs.
 
 ```python
-config = ModelConfig(layers="invalid")  # ValidationError immediately!
+config = ModelConfig(layers="invalid")  # TypeError immediately!
+config = ModelConfig(layesr=12)         # ValueError: unknown field
 # No more failed experiments due to config typos
 ```
 
@@ -95,7 +99,7 @@ python train.py --model ditconfig --model.n_heads 16 --optimizer sgdconfig --opt
 ```
 
 ### **4. Zero Boilerplate**
-Pure Python classes with no frameworks, no special syntax, and no additional dependencies. If you know Python, you know ZenCFG.
+Pure Python classes with no frameworks and no special syntax (validation is powered by [pydantic](https://docs.pydantic.dev) under the hood). If you know Python, you know ZenCFG.
 
 ```python
 from zencfg import make_config_from_cli
@@ -153,6 +157,9 @@ class CompositeModel(ModelConfig):
 
 class AdamW(OptimizerConfig):
     weight_decay: float = 0.01
+
+class SGD(OptimizerConfig):
+    momentum: float = 0.9
 ```
 
 ### Composing categories
@@ -197,7 +204,7 @@ from zencfg import make_config_from_cli
 
 from YOUR_CONFIG_FILE import Config
 
-config = make_config_from_cli(Config, strict=True)
+config = make_config_from_cli(Config)
 ```
 
 Or load configs from files:
@@ -264,7 +271,7 @@ class ModelConfig(ConfigBase):
 
 class UNet(ModelConfig):
     layers: int = 10
-    kernel: Tuple[int] = (3, 3)
+    kernel: Tuple[int, int] = (3, 3)
 
 class DiT(ModelConfig):
     layers: int = 10
