@@ -171,8 +171,28 @@ def test_preserve_config_defaults_args(config_class):
     }
     result = make_config_from_flat_dict(Config, data)
     assert result.opt._config_name == 'adamw', f"Expected 'adamw' but got {result}"
-    assert result.opt.weight_decay == 0.01
+    # As documented (README "Gotchas"): overriding a parameter without passing a
+    # new _config_name keeps the default instance's values (here weight_decay=10)
+    assert result.opt.weight_decay == 10
     assert result.opt.param == 10
+
+    # Selecting a new _config_name starts fresh from that subclass's defaults
+    data = {
+        "opt._config_name": "adamw",
+        "opt.param": "10",
+    }
+    result = make_config_from_flat_dict(Config, data)
+    assert result.opt.weight_decay == 10  # same subclass: instance defaults kept
+
+    class SGD(OptimizerConfig):
+        momentum: float = 0.9
+
+    data = {
+        "opt._config_name": "sgd",
+    }
+    result = make_config_from_flat_dict(Config, data)
+    assert result.opt._config_name == 'sgd'
+    assert result.opt.momentum == 0.9
 
 
 

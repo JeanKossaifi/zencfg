@@ -42,7 +42,9 @@ def test_config_from_commandline(monkeypatch):
         opt: OptimizerConfig = AdamW()
 
     config = cfg_from_commandline(Config)
-    assert config.model._config_name == "CompositeModel"
+    # _config_name is the canonical (lowercase) registered name
+    assert config.model._config_name == "compositemodel"
+    assert isinstance(config.model, CompositeModel)
     assert config.model.submodel._config_name == "dit"
     assert config.model.submodel.layers == 16
-    assert config.opt._config_name == "adamw" 
+    assert config.opt._config_name == "adamw"

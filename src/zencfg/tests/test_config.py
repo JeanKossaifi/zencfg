@@ -50,9 +50,14 @@ def test_config():
     with pytest.raises(ValueError):
         c = Config()
 
-    c = Config(model = ModelConfig(name='DIT', layers=24))
-    assert c.model.name == "DIT"
+    c = Config(model = ModelConfig(_config_name='DIT', layers=24))
+    assert isinstance(c.model, DiT)
+    assert c.model._config_name == "dit"
     assert c.model.layers == 24
+
+    # Unknown parameters (e.g. typos) are rejected
+    with pytest.raises(ValueError):
+        Config(model=ModelConfig(), unknown_param=1)
 
 def test_type_validation():
     """Test that type validation works during attribute setting."""

@@ -13,8 +13,8 @@ from .config import ConfigBase
 
 def cfg_from_commandline(config_class: Type[ConfigBase], strict: bool = False) -> ConfigBase:
     """Takes a Config class and returns an instance of it, with values updated from command line.
-    
-    .. deprecated:: 1.0.0
+
+    .. deprecated:: 0.7.0
         Use ``make_config_from_cli()`` instead.
     """
     warnings.warn(
