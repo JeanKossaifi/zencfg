@@ -115,7 +115,7 @@ def test_to_dict_converts_configs_in_containers():
     holder = Holder(opts={"a": Adam()}, schedule=[SGD()])
     dumped = holder.to_dict()
     assert isinstance(dumped["opts"]["a"], dict)
-    assert dumped["opts"]["a"]["_config_name"] == "adam"
+    assert dumped["opts"]["a"]["_config_name"] == "Adam"
     assert isinstance(dumped["schedule"][0], dict)
 
 
@@ -398,6 +398,19 @@ def test_non_string_config_name_is_a_clear_error():
 
     with pytest.raises(ValueError, match="must be a string"):
         make_config_from_flat_dict(Train, {"opt": {"_config_name": 123}})
+
+
+def test_config_name_reports_class_name_and_matches_any_case():
+    """_config_name reports the actual class name; selection accepts any casing."""
+    class Train(ConfigBase):
+        opt: OptimizerConfig = Adam()
+
+    for spelling in ("SGD", "sgd", "Sgd", "sGD"):
+        cfg = make_config_from_flat_dict(Train, {"opt": spelling})
+        assert isinstance(cfg.opt, SGD)
+        assert cfg.opt._config_name == "SGD"
+
+    assert Train().to_dict()["opt"]["_config_name"] == "Adam"
 
 
 def test_pep563_annotations_resolve_in_parent_module(tmp_path, monkeypatch):

@@ -108,7 +108,7 @@ def _cli_help_lines(config, prefix: str = "", seen: frozenset = frozenset()) -> 
             value = getattr(config, field_name)
         config_type = extract_configbase_member(field.annotation)
         if isinstance(config_type, type) and issubclass(config_type, ConfigBase):
-            choices = [config_type._config_name, *config_type._registry]
+            choices = config_type._config_name_choices()
             if isinstance(value, ConfigBase):
                 default = value._config_name
             else:

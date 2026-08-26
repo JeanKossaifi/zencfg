@@ -52,7 +52,7 @@ def test_config():
 
     c = Config(model = ModelConfig(_config_name='DIT', layers=24))
     assert isinstance(c.model, DiT)
-    assert c.model._config_name == "dit"
+    assert c.model._config_name == "DiT"
     assert c.model.layers == 24
 
     # Unknown parameters (e.g. typos) are rejected

@@ -253,40 +253,50 @@ class ConfigBase(BaseModel, metaclass=_ConfigMeta):
     __hash__ = object.__hash__
 
     _registry: ClassVar[dict] = {}
-    _config_name: ClassVar[str] = "configbase"
+    _config_name: ClassVar[str] = "ConfigBase"
     _target_class: ClassVar[Any] = None  # optional target for instantiate()
 
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs):
-        """Register subclasses by lowercase class name.
+        """Register subclasses by class name (selection is case-insensitive).
 
         Direct children of ConfigBase are categories and get their own registry;
         deeper subclasses register into their category's registry.
         """
         super().__pydantic_init_subclass__(**kwargs)
         parent = cls.__bases__[0]
-        cls._config_name = cls.__name__.lower()
+        cls._config_name = cls.__name__
         if parent is ConfigBase:
             cls._registry = {}
         elif issubclass(parent, ConfigBase):
-            parent._registry[cls._config_name] = cls
+            parent._registry[cls.__name__.lower()] = cls
+
+    @classmethod
+    def _config_name_choices(cls) -> list:
+        """Class names selectable from cls, for error messages and --help."""
+        subclasses = [c._config_name for c in cls._registry.values() if issubclass(c, cls)]
+        return list(dict.fromkeys([cls._config_name, *subclasses]))
 
     @classmethod
     def _get_subclass_by_name(cls, config_name: Optional[str]) -> Type["ConfigBase"]:
-        """Return the registered subclass for `config_name` (falsy name: cls itself)."""
+        """Return the registered subclass for `config_name` (falsy name: cls itself).
+
+        Matching is case-insensitive: both "CompositeModel" and "compositemodel"
+        select the CompositeModel class.
+        """
         if not config_name:
             return cls
         if not isinstance(config_name, str):
             raise ValueError(f"'_config_name' must be a string, "
                              f"got {type(config_name).__name__}: {config_name!r}")
         config_name = config_name.lower()
-        if config_name == cls._config_name:
+        if config_name == cls._config_name.lower():
             return cls
         if config_name in cls._registry:
             return cls._registry[config_name]
         raise ValueError(
             f"Unknown subclass '{config_name}' for class '{cls.__name__}', "
-            f"should be one of: {list(dict.fromkeys([cls._config_name, *cls._registry]))}")
+            f"should be one of: {cls._config_name_choices()}")
 
     def __new__(cls, **data):
         """If '_config_name' is passed, create the corresponding subclass instead."""
@@ -347,10 +357,8 @@ class ConfigBase(BaseModel, metaclass=_ConfigMeta):
                 data = {key: value for key, value in data.items() if key != "_config_name"}
                 target = cls._get_subclass_by_name(config_name)
                 if not issubclass(target, cls):
-                    valid = dict.fromkeys([cls._config_name] + [
-                        n for n, c in cls._registry.items() if issubclass(c, cls)])
                     raise ValueError(f"'{config_name}' is not a {cls.__name__}, "
-                                     f"should be one of: {list(valid)}")
+                                     f"should be one of: {cls._config_name_choices()}")
                 if target is not cls:
                     return target.model_validate(data)
             data = {key: cls._coerce_string(key, value) for key, value in data.items()}

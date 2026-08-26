@@ -59,7 +59,7 @@ def test_simple_config_from_dict(config_class):
     assert cfg.model.layers == 8
 
     # 'cfg.opt' should be AdamW
-    assert cfg.opt._config_name == "adamw"
+    assert cfg.opt._config_name == "AdamW"
     assert cfg.opt.lr == 0.005
     assert cfg.opt.weight_decay == 0.1
 
@@ -78,7 +78,7 @@ def test_composite_style_from_dict(config_class):
 
     assert cfg.model.submodel._config_name.lower() == "unet"
     assert cfg.model.submodel.conv == "Success"
-    assert cfg.opt._config_name == "adamw"
+    assert cfg.opt._config_name == "AdamW"
     assert isinstance(cfg.model, CompositeModel)
     assert isinstance(cfg.model.submodel, Unet)
     
@@ -170,7 +170,7 @@ def test_preserve_config_defaults_args(config_class):
         "opt.param": "10",
     }
     result = make_config_from_flat_dict(Config, data)
-    assert result.opt._config_name == 'adamw', f"Expected 'adamw' but got {result}"
+    assert result.opt._config_name == 'AdamW', f"Expected 'AdamW' but got {result}"
     # As documented (README "Gotchas"): overriding a parameter without passing a
     # new _config_name keeps the default instance's values (here weight_decay=10)
     assert result.opt.weight_decay == 10
@@ -191,7 +191,7 @@ def test_preserve_config_defaults_args(config_class):
         "opt._config_name": "sgd",
     }
     result = make_config_from_flat_dict(Config, data)
-    assert result.opt._config_name == 'sgd'
+    assert result.opt._config_name == 'SGD'
     assert result.opt.momentum == 0.9
 
 
@@ -219,7 +219,7 @@ def test_no_subclass():
     }
     cfg = make_config_from_flat_dict(Config, data, strict=True)
 
-    assert cfg.opt._config_name == "adamw"
+    assert cfg.opt._config_name == "AdamW"
     assert cfg.opt.lr == 0.005
     assert cfg.opt.weight_decay == 0.1
     assert cfg.opt.param == 5

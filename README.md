@@ -175,7 +175,7 @@ class Config(ConfigBase):
 
 Note the `_config_name="adamw"`: this indicates that the default will be the AdamW class. 
 You can create a subcategory by passing to the main category class the class name of the subcategory you want to create, 
-through `_config_name`. 
+through `_config_name` (matching is case-insensitive: `'adamw'`, `'AdamW'` and `'ADAMW'` all select the `AdamW` class). 
 
 The above is equivalent to explicitly creating an ADAMW optimizer:
 
@@ -296,12 +296,12 @@ To fix this, we treat ConfigBase parameters differently: we first take the defau
 Then, if the user passes a new `_config_name` (e.g. 'unet'), we discard those and use only users defaults.
 
 Otherwise, if the user does **not** pass a `_config_name` (i.e. they want to use the default), then we use 
-the same defaults (`DiT(layers=4)`), which is turned into a dict: `{'_config_name': 'dit', 'layers': 4}` and we update it 
+the same defaults (`DiT(layers=4)`), which is turned into a dict: `{'_config_name': 'DiT', 'layers': 4}` and we update it 
 with the values passed by the user. 
 
 This causes the least surprises in general but you may want to be aware of this.
 For example, back to our example, this will allow the users to get back a config that matches what they'd expect: 
- `{'_config_name': 'dit', 'layers': 6}`
+ `{'_config_name': 'DiT', 'layers': 6}`
 
 ## Questions or issues
 This is very much a project in development that I wrote for myself and decided to share so others could easily reuse it for multiple projects, while knowing it is tested and actively developed!
