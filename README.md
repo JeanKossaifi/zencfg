@@ -8,10 +8,17 @@ A Zen way to configure your Python packages while keeping your sanity.
 
 First install the library:
 
+1. Via pip:
 ```bash
 pip install zencfg
 ```
 
+2. Or via conda:
+```bash
+conda install conda-forge::zencfg
+```
+
+zencfg is now ready to use!
 ```python
 from zencfg import ConfigBase, make_config_from_cli
 
